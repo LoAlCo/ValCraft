@@ -78,7 +78,7 @@ import org.jspecify.annotations.Nullable;
  * move, ...) and all particles) relative to a block near the camera. Arrows,
  * dropped items and thrown items have their own lighter path (WorldExporter). Render thread only.
  */
-final class AvatarExporter implements SubmitNodeCollector {
+public final class AvatarExporter implements SubmitNodeCollector {
 	// Vertex flags: cutout, full-detail texture, lit by its own faces / without a normal / blended.
 	private static final int SOLID = 1 | 8 | (7 << 4);
 	private static final int PARTICLE = 1 | 8;
@@ -102,6 +102,9 @@ final class AvatarExporter implements SubmitNodeCollector {
 	private static final AvatarExporter AVATAR = new AvatarExporter();
 	private static final AvatarExporter SCENE = new AvatarExporter();
 	private static final AvatarExporter RAGDOLL = new AvatarExporter();
+	private static final AvatarExporter VIEWMODEL = new AvatarExporter();
+	private static ValAtlas lastAtlas;
+	private static boolean viewModelThisFrame;
 	private static long nextRagdollNanos;
 
 	private final Map<Long, Batch> batches = new HashMap<>();
@@ -122,11 +125,37 @@ final class AvatarExporter implements SubmitNodeCollector {
 		AVATAR.shown = false;
 		SCENE.shown = false;
 		RAGDOLL.shown = false;
+		VIEWMODEL.shown = false;
 		nextRagdollNanos = 0;
 		movingBlocks = null;
 	}
 
+	/**
+	 * GameRenderer.renderItemInHand: the first-person hands go into this collector instead of the
+	 * screen (Valheim draws them in its scene, lit by its sun, shadows and lightning). Null before
+	 * the atlas exists: Minecraft draws them itself then.
+	 */
+	public static net.minecraft.client.renderer.@Nullable SubmitNodeCollector beginViewModel() {
+		if (lastAtlas == null) {
+			return null;
+		}
+		VIEWMODEL.atlas = lastAtlas;
+		VIEWMODEL.begin();
+		return VIEWMODEL;
+	}
+
+	public static void endViewModel() {
+		VIEWMODEL.send(Proto.REN_VIEWMODEL, null);
+		viewModelThisFrame = true;
+	}
+
 	static void frame(Minecraft minecraft, ValAtlas atlas, float partialTick) {
+		lastAtlas = atlas;
+		// No hands this frame (third person, F1, a screen open): Valheim hides them.
+		if (!viewModelThisFrame) {
+			VIEWMODEL.sendEmpty(Proto.REN_VIEWMODEL, false);
+		}
+		viewModelThisFrame = false;
 		AVATAR.exportAvatar(minecraft, atlas, partialTick);
 		SCENE.exportScene(minecraft, atlas, partialTick);
 		long now = System.nanoTime();
@@ -678,7 +707,12 @@ final class AvatarExporter implements SubmitNodeCollector {
 		int color = layer >= 0 && layer < tintLayers.length ? tintLayers[layer] : -1;
 		var sprite = material.sprite();
 		Vector3f p = new Vector3f();
-		for (int k = 0; k < 4; k++) {
+		// A mirrored pose (a negative scale somewhere, as items held in first person can have) turns
+		// the quad inside out: Minecraft lights by its vertex normals, but Valheim takes the normal
+		// and the facing from the winding. Reversed, the face points out again.
+		boolean mirrored = pose.determinant3x3() < 0.0F;
+		for (int i = 0; i < 4; i++) {
+			int k = mirrored ? 3 - i : i;
 			pose.transformPosition(quad.position(k), p);
 			long uv = quad.packedUV(k);
 			batch.add(p.x(), p.y(), p.z(), this.atlas.u(sprite, UVPair.unpackU(uv)), this.atlas.v(sprite, UVPair.unpackV(uv)), color, lightCoords, overlayCoords);

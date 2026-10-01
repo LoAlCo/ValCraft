@@ -15,7 +15,10 @@ namespace ValCraft.Render
     public static unsafe class SceneRender
     {
         static readonly Dictionary<int, Texture2D> _textures = new Dictionary<int, Texture2D>();
-        static Part _scene, _avatar;
+        static Part _scene, _avatar, _viewModel;
+        // The hands come in Minecraft's view space (metres in front of the eye); shrunk towards the eye
+        // they look the same but stay inside the player's collision, so walls never cut into them.
+        const float ViewModelScale = 0.25f;
         public static bool AvatarVisible => _avatar != null && _avatar.renderer && _avatar.renderer.enabled;
 
         class Part
@@ -32,6 +35,7 @@ namespace ValCraft.Render
             _textures.Clear();
             if (_scene != null && _scene.renderer) _scene.renderer.enabled = false;
             if (_avatar != null && _avatar.renderer) _avatar.renderer.enabled = false;
+            if (_viewModel != null && _viewModel.renderer) _viewModel.renderer.enabled = false;
         }
 
         public static void OnTexture(byte* p, uint bytes)
@@ -64,9 +68,70 @@ namespace ValCraft.Render
             Build(_avatar, p, bytes);
         }
 
+        // The hands are drawn deferred like the world, with Valheim's ambient occlusion taken back off
+        // them (HandOcclusion; so close to the eye it turned them black). Where it can't be (the
+        // occlusion not in the G-buffer), they're drawn after the opaque pass instead: no ambient
+        // occlusion, but no shadows either.
+        public static MeshRenderer ViewModelRenderer => _viewModel != null && _viewModel.renderer && _viewModel.renderer.enabled ? _viewModel.renderer : null;
+        static readonly Dictionary<Material, Material> _late = new Dictionary<Material, Material>();
+        static readonly HashSet<Material> _lateSet = new HashSet<Material>();
+
+        public static void RefreshViewModel()
+        {
+            if (_viewModel != null) _viewModel.hash = 0;  // rebuilt with the right materials
+        }
+
+        static void ApplyViewModelMode()
+        {
+            if (_viewModel == null || !_viewModel.renderer) return;
+            bool late = !HandOcclusion.Usable;
+            _viewModel.renderer.receiveShadows = !late;
+            if (!late) return;
+            var mats = _viewModel.renderer.sharedMaterials;
+            for (int i = 0; i < mats.Length; i++)
+            {
+                if (!mats[i] || _lateSet.Contains(mats[i])) continue;  // already swapped (an unchanged frame)
+                if (!_late.TryGetValue(mats[i], out var m) || !m)
+                {
+                    m = new Material(mats[i]) { name = mats[i].name + "_late" };
+                    m.renderQueue = Math.Max(mats[i].renderQueue, 2501);
+                    _late[mats[i]] = m;
+                    _lateSet.Add(m);
+                }
+                if (m.mainTexture != mats[i].mainTexture) m.mainTexture = mats[i].mainTexture;  // a new atlas
+                mats[i] = m;
+            }
+            _viewModel.renderer.sharedMaterials = mats;
+        }
+
+        // Same payload as the avatar, positions in Minecraft's view space (x right, y up, looking -z).
+        public static void OnViewModel(byte* p, uint bytes)
+        {
+            var cam = GameCamera.instance;
+            if (!cam) return;
+            if (_viewModel == null || !_viewModel.go)
+            {
+                _viewModel = NewPart(cam.transform, "minecraft hands");
+                _viewModel.go.transform.localPosition = Vector3.zero;
+                _viewModel.go.transform.localRotation = Quaternion.identity;
+                _viewModel.go.transform.localScale = new Vector3(ViewModelScale, ViewModelScale, -ViewModelScale);
+                // Lit and shaded by the world, but casting no shadow of its own (it would land on the
+                // view from inside the head).
+                _viewModel.renderer.shadowCastingMode = ShadowCastingMode.Off;
+                _viewModel.renderer.receiveShadows = true;
+                // Moves with the camera: no motion vectors of its own, so motion blur leaves it sharp.
+                _viewModel.renderer.motionVectorGenerationMode = MotionVectorGenerationMode.ForceNoMotion;
+                if (!cam.GetComponent<HandOcclusion>()) cam.gameObject.AddComponent<HandOcclusion>();
+            }
+            Build(_viewModel, p, bytes);
+            ApplyViewModelMode();
+            if (!Puppet.Puppeting || Puppet.Mc.cameraMode != 0) _viewModel.renderer.enabled = false;
+        }
+
         // Every frame: the body stands at the feet the camera follows (Puppet's interpolation).
         public static void Frame()
         {
+            if (_viewModel != null && _viewModel.go && (!Puppet.Puppeting || Puppet.Mc.cameraMode != 0)) _viewModel.renderer.enabled = false;
             if (_avatar == null || !_avatar.go) return;
             if (!Puppet.Puppeting || Puppet.Mc.cameraMode == 0) { _avatar.renderer.enabled = false; return; }
             var f = Coords.ToMc(Puppet.FeetPos);

@@ -22,7 +22,8 @@
     "TextureManagerAccessor",
     "WaitingForPlayerChunkMixin",
     "WindowMixin",
-    "WorldOpenFlowsMixin"
+    "WorldOpenFlowsMixin",
+    "ItemInHandMixin"
   ],
   "injectors": { "defaultRequire": 1 }
 }

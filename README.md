@@ -54,6 +54,7 @@ To use your own launcher instead, set `[Minecraft] Launcher` / `Arguments` in
 
 - **Movement:** Minecraft physics on Valheim's terrain, rocks, trees, buildings and dungeons, and swimming in Valheim's sea.
 - **Building:** placing and breaking Minecraft blocks in Valheim's scene, lit by its sun, shadows and fog. Torches and lava light the world, and Valheim's creatures bump into your builds.
+- **First person:** Minecraft's hands and held items are drawn in Valheim's scene, lit and shadowed by its sun, weather and lightning.
 - **Minecraft things:** entities, particles, chests and furnaces, TNT, arrows, dropped items, and your own Minecraft body in third person.
 - **Combat:** Minecraft weapons and arrows hit Valheim creatures, and their hits come back as Minecraft damage, with armor and shields.
 - **Tools:** axes chop trees, pickaxes mine rocks and dig terrain, with Valheim's tool tiers.

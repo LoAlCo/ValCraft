@@ -123,6 +123,9 @@ public final class Proto {
 	public static final int REN_LIGHTS = 8;
 	public static final int REN_RAGDOLL = 9;
 	public static final int REN_SOLIDS = 10;
+	// ValCraft: the first-person hands and held items, in Minecraft view space (camera at the origin
+	// looking down -Z), drawn by Valheim in its scene. RenAvatar layout; 0 batches = none this frame.
+	public static final int REN_VIEWMODEL = 11;
 	public static final int PART_HEAD = 1, PART_BODY = 2, PART_RIGHT_ARM = 3, PART_LEFT_ARM = 4, PART_RIGHT_LEG = 5, PART_LEFT_LEG = 6;
 	public static final int LIGHT_STEADY = 0, LIGHT_FLAME = 1, LIGHT_LAVA = 2;
 	public static final int REN_VERTEX_BYTES = 32;

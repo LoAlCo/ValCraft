@@ -131,6 +131,19 @@ namespace ValCraft
         }
     }
 
+    // Valheim's key hints (attack, block, dodge) are for its own controls: hidden while Minecraft drives.
+    [HarmonyPatch(typeof(KeyHints), "UpdateHints")]
+    static class KeyHintsPatch
+    {
+        static void Postfix(KeyHints __instance)
+        {
+            if (!Puppet.MinecraftOwnsPlayer || Plugin.Paused) return;
+            if (__instance.m_combatHints) __instance.m_combatHints.SetActive(false);
+            if (__instance.m_buildHints) __instance.m_buildHints.SetActive(false);
+            if (__instance.m_fishingHints) __instance.m_fishingHints.SetActive(false);
+        }
+    }
+
     // A Minecraft screen (inventory, chest, chat) uses the real cursor.
     [HarmonyPatch(typeof(GameCamera), nameof(GameCamera.UpdateMouseCapture))]
     static class MouseCapturePatch

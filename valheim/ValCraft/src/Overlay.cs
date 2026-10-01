@@ -35,17 +35,26 @@ namespace ValCraft
             Frames++;
         }
 
+        static bool ShouldDraw => _haveFrame && _tex && Puppet.MinecraftOwnsPlayer && !(Puppet.ValheimMenuOpen && !Puppet.McScreenOpen);
+
         public static void Draw()
         {
-            if (!_haveFrame || !_tex || Event.current.type != EventType.Repaint) return;
-            if (!Puppet.MinecraftOwnsPlayer || Puppet.ValheimMenuOpen && !Puppet.McScreenOpen) return;
+            if (Event.current.type != EventType.Repaint || !ShouldDraw) return;
+            if (!_triedMaterial && Player.m_localPlayer) { _triedMaterial = true; _material = PremultipliedMaterial(); }
             // Minecraft's frame is premultiplied; GUI.DrawTexture blends straight alpha, which is
             // exact for opaque pixels and Minecraft's black screen dimming, slightly dark elsewhere.
-            if (!_triedMaterial && Player.m_localPlayer) { _triedMaterial = true; _material = PremultipliedMaterial(); }
             var rect = new Rect(0, 0, Screen.width, Screen.height);
-            if (_material != null) Graphics.DrawTexture(rect, _tex, new Rect(0, 0, 1, 1), 0, 0, 0, 0, Color.white, _material);
-            else GUI.DrawTexture(rect, _tex, ScaleMode.StretchToFill, true);
+            if (_material == null) { GUI.DrawTexture(rect, _tex, ScaleMode.StretchToFill, true); return; }
+            // The particle shader has a soft-particle variant (on with Valheim's quality settings): it
+            // fades out wherever the camera's depth texture has something close behind it, which made
+            // the HUD (and once the hand) see-through near walls, trees and the first-person hands.
+            bool soft = Shader.IsKeywordEnabled(SoftParticles);
+            if (soft) Shader.DisableKeyword(SoftParticles);
+            Graphics.DrawTexture(rect, _tex, new Rect(0, 0, 1, 1), 0, 0, 0, 0, Color.white, _material);
+            if (soft) Shader.EnableKeyword(SoftParticles);
         }
+
+        const string SoftParticles = "SOFTPARTICLES_ON";
 
         // Some Unity built-in shader that blends One, OneMinusSrcAlpha, if the game ships one.
         static Material PremultipliedMaterial()
@@ -56,7 +65,10 @@ namespace ValCraft
                 if (s)
                 {
                     Plugin.Log("overlay shader: " + name);
-                    return new Material(s);
+                    var m = new Material(s);
+                    m.DisableKeyword(SoftParticles);
+                    m.SetFloat("_InvFade", 1e6f);  // and should the variant still be picked: no fade
+                    return m;
                 }
             }
             Plugin.Log("overlay shader: none premultiplied; using GUI.DrawTexture");

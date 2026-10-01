@@ -126,6 +126,7 @@ namespace ValCraft
                     case Proto.RenTexture: SceneRender.OnTexture(p, bytes); break;
                     case Proto.RenScene: SceneRender.OnScene(_root.transform, p, bytes); break;
                     case Proto.RenAvatar: SceneRender.OnAvatar(_root.transform, p, bytes); break;
+                    case Proto.RenViewModel: SceneRender.OnViewModel(p, bytes); break;
                     default: break;  // ragdoll: later
                 }
             }

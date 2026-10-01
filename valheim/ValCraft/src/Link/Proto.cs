@@ -108,6 +108,7 @@ namespace ValCraft.Link
         public const uint RenLights = 8;
         public const uint RenRagdoll = 9;
         public const uint RenSolids = 10;
+        public const uint RenViewModel = 11;
     }
 
     [StructLayout(LayoutKind.Sequential)]
