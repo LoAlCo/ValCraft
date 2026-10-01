@@ -111,7 +111,9 @@ def main():
         jdk = r"C:\Program Files\Eclipse Adoptium\jdk-25.0.3.9-hotspot"
         if os.path.isdir(jdk):
             env["JAVA_HOME"] = jdk
-        run(["gradlew.bat" if os.name == "nt" else "./gradlew", "build", "--no-daemon"], os.path.join(ROOT, "fabric"), env)
+        fabric = os.path.join(ROOT, "fabric")
+        # Full path: cmd doesn't always look in the working directory (NoDefaultCurrentDirectoryInExePath).
+        run([os.path.join(fabric, "gradlew.bat") if os.name == "nt" else "./gradlew", "build", "--no-daemon"], fabric, env)
         run(["dotnet", "build", "-c", "Release"], os.path.join(ROOT, "valheim", "ValCraft"))
 
     jar = os.path.join(ROOT, "fabric", "build", "libs", f"valcraft-{ver}.jar")

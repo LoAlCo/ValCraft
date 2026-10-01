@@ -24,7 +24,9 @@ namespace ValCraft
             if (_tex == null || _tex.width != w || _tex.height != h)
             {
                 if (_tex) UnityEngine.Object.Destroy(_tex);
-                _tex = new Texture2D(w, h, TextureFormat.RGBA32, false, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp, name = "ValCraft overlay" };
+                // linear: true. Minecraft's bytes are already display colours; as an sRGB texture they were
+                // linearised on sampling but never converted back by the GUI pass, which darkened the HUD.
+                _tex = new Texture2D(w, h, TextureFormat.RGBA32, false, true) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp, name = "ValCraft overlay" };
                 Plugin.Log($"overlay texture {w}x{h}");
             }
             _tex.LoadRawTextureData((IntPtr)Shm.FrontPixels, w * h * 4);

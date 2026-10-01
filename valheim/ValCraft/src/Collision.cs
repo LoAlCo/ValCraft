@@ -137,7 +137,13 @@ namespace ValCraft
             }
         }
 
-        public static void Update(Vector3d playerMc)
+        // Moving fast (sprint-jumping downhill, an elytra, a minecart), the regions ahead are sent
+        // first and more go per frame: arriving somewhere Minecraft has no collision for yet lets
+        // the player straight into the ground.
+        const float FastSpeed = 6f;                       // blocks per second
+        static readonly float[] Lookahead = { 0.25f, 0.5f, 0.75f, 1.0f, 1.5f };  // seconds
+
+        public static void Update(Vector3d playerMc, Vector3 velocityMc)
         {
             ProcessInvalidations();
             int prx = Mathf.FloorToInt((float)playerMc.x / RegionSize);
@@ -146,6 +152,30 @@ namespace ValCraft
             float now = Time.realtimeSinceStartup;
             var sw = Stopwatch.StartNew();
             int done = 0;
+            float speed = velocityMc.magnitude;
+            bool fast = speed > FastSpeed;
+            int maxHarvests = fast ? 10 : MaxHarvestsPerFrame;
+            double budget = fast ? 6.0 : FrameBudgetMs;
+            if (fast)
+            {
+                var p = new Vector3((float)playerMc.x, (float)playerMc.y, (float)playerMc.z);
+                foreach (float t in Lookahead)
+                {
+                    var ahead = p + velocityMc * t;
+                    if ((ahead - p).sqrMagnitude > 64f * 64f) break;
+                    int ax = Mathf.FloorToInt(ahead.x / RegionSize), ay = Mathf.FloorToInt(ahead.y / RegionSize), az = Mathf.FloorToInt(ahead.z / RegionSize);
+                    for (int dy = -1; dy <= 1; dy++)
+                        for (int dz = -1; dz <= 1; dz++)
+                            for (int dx = -1; dx <= 1; dx++)
+                            {
+                                long k = Key(ax + dx, ay + dy, az + dz);
+                                if (_harvested.ContainsKey(k)) continue;
+                                Harvest(ax + dx, ay + dy, az + dz);
+                                _harvested[k] = now;
+                                if (++done >= maxHarvests || sw.Elapsed.TotalMilliseconds > budget) return;
+                            }
+                }
+            }
             foreach (var o in _offsets)
             {
                 int rx = prx + o.x, ry = pry + o.y, rz = prz + o.z;
@@ -155,7 +185,7 @@ namespace ValCraft
                 if (_harvested.TryGetValue(key, out float at) && !(near && now - at > RefreshNear)) continue;
                 Harvest(rx, ry, rz);
                 _harvested[key] = now;
-                if (++done >= MaxHarvestsPerFrame || sw.Elapsed.TotalMilliseconds > FrameBudgetMs) break;
+                if (++done >= maxHarvests || sw.Elapsed.TotalMilliseconds > budget) break;
             }
             if (_harvested.Count > _offsets.Count * 4) _harvested.Clear();
             if (_meshCache.Count > 4096) _meshCache.Clear();

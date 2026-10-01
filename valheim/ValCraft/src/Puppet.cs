@@ -35,6 +35,7 @@ namespace ValCraft
         static uint _worldId;
         // Where MotionPatch last put the body (FixedUpdate): Valheim moving it anywhere else is its own teleport.
         public static Vector3 LastSetPos;
+        public static bool BodyKinematic;  // we made the body kinematic (MotionPatch); undone when Minecraft lets go
         public static bool HaveLastSet;
         static Player _lastPlayer;
         static Rigidbody _body;
@@ -44,6 +45,17 @@ namespace ValCraft
         static string _takeover;
         const float SettleSeconds = 1.5f;
         const float ValheimTeleportThreshold = 4f;  // metres; bigger jumps are Valheim moving the player
+
+        // The body is placed in two places a frame (FixedUpdate and LateUpdate), so how far it may be
+        // from the last placing grows with speed: at 30+ m/s (an elytra with fireworks) a frame or two
+        // between them is already 4 m, and calling that a teleport snapped Minecraft back mid-flight.
+        static float TeleportThreshold()
+        {
+            if (Mc.tickMs <= 0f) return ValheimTeleportThreshold;
+            double dx = Mc.curX - Mc.prevX, dy = Mc.curY - Mc.prevY, dz = Mc.curZ - Mc.prevZ;
+            float speed = (float)System.Math.Sqrt(dx * dx + dy * dy + dz * dz) * (1000f / Mc.tickMs);
+            return Mathf.Max(ValheimTeleportThreshold, 2f + speed * 0.5f);
+        }
 
         // Minecraft's 20 Hz physics ticks, interpolated on our own frame clock (see SkyCraft's Game.cpp).
         struct Tick { public McState s; public long at; public int slots; }
@@ -139,7 +151,7 @@ namespace ValCraft
                 _teleportPending = true;
                 HaveLastSet = false;
             }
-            else if (HaveLastSet && _body && Vector3.Distance(_body.position, LastSetPos) > ValheimTeleportThreshold)
+            else if (HaveLastSet && _body && Vector3.Distance(_body.position, LastSetPos) > TeleportThreshold())
             {
                 Plugin.Log($"Valheim moved the player ({Vector3.Distance(_body.position, LastSetPos):F1} m); resyncing Minecraft");
                 Coords.UpdateFor(current);
@@ -237,6 +249,11 @@ namespace ValCraft
             else
             {
                 EyeValid = false;
+                if (BodyKinematic && _body)
+                {
+                    _body.isKinematic = false;
+                    BodyKinematic = false;
+                }
                 // Through a teleport (portals, dungeon doors) the Minecraft player is only between places:
                 // the Viking stays hidden. It shows when Valheim really has the player (sitting, a bed, a ship).
                 bool betweenPlaces = McInWorld && (player.IsTeleporting() || MinecraftOwnsPlayer);
@@ -248,7 +265,11 @@ namespace ValCraft
 
             _settleTimer -= dt;
             Vector3d centre = puppet ? new Vector3d(Mc.x, Mc.y, Mc.z) : Coords.ToMc(current);
-            if (haveMc && !loading && _settleTimer <= 0f) Collision.Update(centre);
+            // Minecraft's own velocity (last tick), so collision ahead of a fast player arrives in time.
+            var velocity = Vector3.zero;
+            if (puppet && Mc.tickMs > 0f)
+                velocity = new Vector3((float)(Mc.curX - Mc.prevX), (float)(Mc.curY - Mc.prevY), (float)(Mc.curZ - Mc.prevZ)) * (1000f / Mc.tickMs);
+            if (haveMc && !loading && _settleTimer <= 0f) Collision.Update(centre, velocity);
             if (haveMc && McInWorld && !loading && Time.frameCount % 3 == 0) Water.Write(centre, _worldId);
         }
 

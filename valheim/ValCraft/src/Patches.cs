@@ -26,12 +26,21 @@ namespace ValCraft
             if (!Puppet.Puppeting || __instance != Player.m_localPlayer || !___m_body) return true;
             var target = Puppet.FeetPos;
             var prev = ___m_body.position;
+            // Kinematic while Minecraft drives: still solid to creatures and other players (it pushes
+            // them), but physics can't shove it. A dynamic body put down inside terrain (Minecraft
+            // moving fast past collision it hasn't got yet) was thrown out of it, and that throw read
+            // as Valheim teleporting the player: Minecraft followed and fell to its death.
+            if (!___m_body.isKinematic)
+            {
+                ___m_body.linearVelocity = Vector3.zero;
+                ___m_body.angularVelocity = Vector3.zero;
+                ___m_body.isKinematic = true;
+                Puppet.BodyKinematic = true;
+            }
             ___m_body.useGravity = false;
             ___m_body.position = target;
             Puppet.LastSetPos = target;
             Puppet.HaveLastSet = true;
-            ___m_body.linearVelocity = Vector3.zero;
-            ___m_body.angularVelocity = Vector3.zero;
             ___m_currentVel = dt > 0f ? (target - prev) / dt : Vector3.zero;  // what Valheim's animation reads
             ___m_maxAirAltitude = target.y;
             ___m_fallTimer = 0f;
@@ -79,6 +88,7 @@ namespace ValCraft
         {
             if (!Puppet.Puppeting || __instance != Player.m_localPlayer) return;
             __instance.transform.position = Puppet.FeetPos;
+            Puppet.LastSetPos = Puppet.FeetPos;  // placed here too: the teleport check compares against the latest
         }
     }
 

@@ -178,6 +178,15 @@ public final class ValClient {
 		freezeWhileUnlinked(minecraft);
 		holdUntilReady(minecraft);
 		ValHarvest.tick(minecraft);
+		Vec3 held = ValCollider.takeHold();
+		if (held != null && minecraft.player != null) {
+			// Collision ahead hadn't arrived (see ValCollider): stay put this tick, keep the momentum.
+			minecraft.player.setPos(held.x, held.y, held.z);
+			minecraft.player.xo = held.x;
+			minecraft.player.yo = held.y;
+			minecraft.player.zo = held.z;
+			minecraft.player.resetFallDistance();
+		}
 		publishTick(minecraft);
 	}
 
