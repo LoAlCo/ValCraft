@@ -55,7 +55,8 @@ To use your own launcher instead, set `[Minecraft] Launcher` / `Arguments` in
 - **Movement:** Minecraft physics on Valheim's terrain, rocks, trees, buildings and dungeons, and swimming in Valheim's sea.
 - **Building:** placing and breaking Minecraft blocks in Valheim's scene, lit by its sun, shadows and fog. Torches and lava light the world, and Valheim's creatures bump into your builds.
 - **First person:** Minecraft's hands and held items are drawn in Valheim's scene, lit and shadowed by its sun, weather and lightning.
-- **Minecraft things:** entities, particles, chests and furnaces, TNT, arrows, dropped items, and your own Minecraft body in third person.
+- **Underwater:** diving under Valheim's sea (or into Minecraft water) gets fog, a tint, the surface seen from below, and muffled world sounds.
+- **Minecraft things:** entities (burning ones on fire), particles, chests and furnaces, TNT, arrows, fishing lines, leads, dropped items, and your own Minecraft body in third person.
 - **Combat:** Minecraft weapons and arrows hit Valheim creatures, and their hits come back as Minecraft damage, with armor and shields.
 - **Tools:** axes chop trees, pickaxes mine rocks and dig terrain, with Valheim's tool tiers.
 - **Loot:** Valheim loot goes into the Minecraft inventory (wood becomes oak logs, stone becomes cobblestone, and so on). Edit the mapping in `BepInEx/config/ValCraft.loot.txt`.

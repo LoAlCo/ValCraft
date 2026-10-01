@@ -54,6 +54,11 @@ import net.minecraft.client.resources.model.geometry.ItemQuads;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.LightCoordsUtil;
+import net.minecraft.util.Mth;
+import net.minecraft.client.resources.model.ModelBakery;
+import net.minecraft.data.AtlasIds;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -113,6 +118,9 @@ public final class AvatarExporter implements SubmitNodeCollector {
 	private ValAtlas atlas;
 	// Added to every position (particles and their groups come relative to the camera).
 	private float offX, offY, offZ;
+	// Where the camera is in this capture's coordinates (lines face it).
+	private float camX, camY, camZ;
+	private final LineCapture lines = new LineCapture();
 
 	private AvatarExporter() {
 	}
@@ -321,6 +329,9 @@ public final class AvatarExporter implements SubmitNodeCollector {
 		dispatcher.prepare(camera, minecraft.crosshairPickEntity);
 		CameraRenderState cameraState = minecraft.gameRenderer.gameRenderState().levelRenderState.cameraRenderState;
 		PoseStack pose = new PoseStack();
+		this.camX = (float) (cam.x - origin[0]);
+		this.camY = (float) (cam.y - origin[1]);
+		this.camZ = (float) (cam.z - origin[2]);
 		int entities = 0;
 		for (Entity e : level.entitiesForRendering()) {
 			if (e == player || e instanceof ItemEntity || e instanceof AbstractArrow || e instanceof ItemSupplier || e instanceof ValheimActorEntity
@@ -876,10 +887,93 @@ public final class AvatarExporter implements SubmitNodeCollector {
 
 	@Override
 	public void submitFlame(PoseStack poseStack, EntityRenderState renderState, Quaternionf rotation) {
+		// Minecraft's FlameFeatureRenderer: the two fire sprites stacked up the body, facing the
+		// camera, at full block light (Valheim draws them glowing).
+		this.capture.flush();
+		var atlases = Minecraft.getInstance().getAtlasManager();
+		TextureAtlasSprite fire0 = atlases.get(ModelBakery.FIRE_0), fire1 = atlases.get(ModelBakery.FIRE_1);
+		Batch batch = this.batch(0, UV_BLOCK_ATLAS, SOLID);
+		PoseStack.Pose pose = poseStack.last().copy();
+		float scale = renderState.boundingBoxWidth * 1.4F;
+		pose.scale(scale, scale, scale);
+		float halfWidth = 0.5F, y = 0.0F, height = renderState.boundingBoxHeight / scale, z = 0.0F;
+		pose.rotate(rotation);
+		pose.translate(0.0F, 0.0F, 0.3F - (float) (int) height * 0.02F);
+		Matrix4f m = pose.pose();
+		Vector3f p = new Vector3f();
+		for (int i = 0; height > 0.0F; i++) {
+			TextureAtlasSprite sprite = i % 2 == 0 ? fire0 : fire1;
+			float u0 = sprite.getU0(), v0 = sprite.getV0(), u1 = sprite.getU1(), v1 = sprite.getV1();
+			if (i / 2 % 2 == 0) {
+				float t = u1;
+				u1 = u0;
+				u0 = t;
+			}
+			float[][] corners = { { -halfWidth, -y, u1, v1 }, { halfWidth, -y, u0, v1 }, { halfWidth, 1.4F - y, u0, v0 }, { -halfWidth, 1.4F - y, u1, v0 } };
+			for (float[] c : corners) {
+				m.transformPosition(c[0], c[1], z, p);
+				batch.add(p.x(), p.y(), p.z(), c[2], c[3], -1, 0xF000F0, OverlayTexture.NO_OVERLAY);
+			}
+			height -= 0.45F;
+			y -= 0.45F;
+			halfWidth *= 0.9F;
+			z -= 0.03F;
+		}
 	}
 
 	@Override
 	public void submitLeash(PoseStack poseStack, EntityRenderState.LeashState leashState) {
+		// Minecraft's LeashFeatureRenderer: two crossed ribbons of 24 steps from the mob to the
+		// holder, sagging when slack, in alternating light and dark brown. Drawn from both sides
+		// (Minecraft doesn't cull them).
+		this.capture.flush();
+		float dx = (float) (leashState.end.x - leashState.start.x);
+		float dy = (float) (leashState.end.y - leashState.start.y);
+		float dz = (float) (leashState.end.z - leashState.start.z);
+		float k = Mth.invSqrt(dx * dx + dz * dz) * 0.05F / 2.0F;
+		float sideX = dz * k, sideZ = dx * k;
+		Matrix4f m = new Matrix4f(poseStack.last().pose()).translate((float) leashState.offset.x, (float) leashState.offset.y, (float) leashState.offset.z);
+		float[] uv = whiteTexel();
+		Batch batch = this.batch(0, UV_BLOCK_ATLAS, SOLID);
+		// Ribbon 1 runs flat (its two edges 0.05 apart sideways), ribbon 2 upright (0.05 apart in height).
+		for (int ribbon = 0; ribbon < 2; ribbon++) {
+			float thickness = 0.05F, yOff = ribbon == 0 ? 0.05F : 0.0F;
+			float[] prev = null;
+			for (int i = 0; i <= 24; i++) {
+				float f = i / 24.0F;
+				float shade = i % 2 == ribbon ? 0.7F : 1.0F;
+				int color = 0xFF000000 | ((int) (0.5F * shade * 255) << 16) | ((int) (0.4F * shade * 255) << 8) | (int) (0.3F * shade * 255);
+				int light = LightCoordsUtil.pack((int) Mth.lerp(f, leashState.startBlockLight, leashState.endBlockLight), (int) Mth.lerp(f, leashState.startSkyLight, leashState.endSkyLight));
+				float x = dx * f, z = dz * f;
+				float y = leashState.slack ? (dy > 0.0F ? dy * f * f : dy - dy * (1.0F - f) * (1.0F - f)) : dy * f;
+				Vector3f a = m.transformPosition(x - sideX, y + yOff, z + sideZ, new Vector3f());
+				Vector3f b = m.transformPosition(x + sideX, y + thickness - yOff, z - sideZ, new Vector3f());
+				float[] cur = { a.x(), a.y(), a.z(), b.x(), b.y(), b.z(), Float.intBitsToFloat(color), Float.intBitsToFloat(light) };
+				if (prev != null) {
+					quad(batch, uv, prev, cur, false);
+					quad(batch, uv, prev, cur, true);
+				}
+				prev = cur;
+			}
+		}
+	}
+
+	/** One step of a ribbon: from the pair p (edges a, b) to the pair q, in either winding. */
+	private static void quad(Batch batch, float[] uv, float[] p, float[] q, boolean back) {
+		int c = Float.floatToRawIntBits(q[6]), l = Float.floatToRawIntBits(q[7]);
+		float[][] corners = back
+			? new float[][] { { p[0], p[1], p[2] }, { p[3], p[4], p[5] }, { q[3], q[4], q[5] }, { q[0], q[1], q[2] } }
+			: new float[][] { { p[0], p[1], p[2] }, { q[0], q[1], q[2] }, { q[3], q[4], q[5] }, { p[3], p[4], p[5] } };
+		for (float[] v : corners) {
+			batch.add(v[0], v[1], v[2], uv[0], uv[1], c, l, OverlayTexture.NO_OVERLAY);
+		}
+	}
+
+	/** A plain white texel of the block atlas, for untextured geometry (the vertex colour colours it). */
+	private static float[] whiteTexel() {
+		TextureAtlasSprite white = Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.BLOCKS)
+			.getSprite(Identifier.withDefaultNamespace("block/white_concrete"));
+		return new float[] { (white.getU0() + white.getU1()) * 0.5F, (white.getV0() + white.getV1()) * 0.5F };
 	}
 
 	@Override
@@ -897,6 +991,126 @@ public final class AvatarExporter implements SubmitNodeCollector {
 
 	@Override
 	public void submitCustomGeometry(PoseStack poseStack, RenderType renderType, SubmitNodeCollector.CustomGeometryRenderer customGeometryRenderer) {
+		// Fishing bobbers (a textured quad) and fishing lines (Minecraft's line primitive).
+		String name = ((RenderTypeAccessor) renderType).valcraft$name();
+		if (name.startsWith("lines") || name.startsWith("line_strip")) {
+			this.capture.flush();
+			this.lines.begin();
+			customGeometryRenderer.render(poseStack.last(), this.lines);
+			this.lines.emit();
+			return;
+		}
+		Batch batch = this.batchFor(renderType);
+		if (batch == null) {
+			return;
+		}
+		this.capture.begin(batch);
+		customGeometryRenderer.render(poseStack.last(), this.capture);
+		this.capture.flush();
+	}
+
+	/**
+	 * Minecraft's lines are vertex pairs drawn a pixel or two wide. Valheim has no line primitive:
+	 * each segment becomes a thin quad facing the camera, wider with distance so it stays visible.
+	 */
+	private final class LineCapture implements VertexConsumer {
+		private float[] points = new float[64 * 4];
+		private int count;
+
+		void begin() {
+			this.count = 0;
+		}
+
+		@Override
+		public VertexConsumer addVertex(float x, float y, float z) {
+			if ((this.count + 1) * 4 > this.points.length) {
+				this.points = java.util.Arrays.copyOf(this.points, this.points.length * 2);
+			}
+			int o = this.count++ * 4;
+			this.points[o] = x;
+			this.points[o + 1] = y;
+			this.points[o + 2] = z;
+			this.points[o + 3] = Float.intBitsToFloat(0xFF000000);
+			return this;
+		}
+
+		@Override
+		public VertexConsumer setColor(int r, int g, int b, int a) {
+			return this.setColor((a << 24) | (r << 16) | (g << 8) | b);
+		}
+
+		@Override
+		public VertexConsumer setColor(int color) {
+			if (this.count > 0) {
+				this.points[(this.count - 1) * 4 + 3] = Float.intBitsToFloat(color);
+			}
+			return this;
+		}
+
+		@Override
+		public VertexConsumer setUv(float u, float v) {
+			return this;
+		}
+
+		@Override
+		public VertexConsumer setUv1(int u, int v) {
+			return this;
+		}
+
+		@Override
+		public VertexConsumer setUv2(int u, int v) {
+			return this;
+		}
+
+		@Override
+		public VertexConsumer setUv3(float u, float v) {
+			return this;
+		}
+
+		@Override
+		public VertexConsumer setNormal(float x, float y, float z) {
+			return this;
+		}
+
+		@Override
+		public VertexConsumer setLineWidth(float width) {
+			return this;
+		}
+
+		void emit() {
+			if (this.count < 2) {
+				return;
+			}
+			float[] uv = whiteTexel();
+			float u = uv[0], v = uv[1];
+			Batch batch = AvatarExporter.this.batch(0, UV_BLOCK_ATLAS, SOLID);
+			float cx = AvatarExporter.this.camX, cy = AvatarExporter.this.camY, cz = AvatarExporter.this.camZ;
+			Vector3f a = new Vector3f(), b = new Vector3f(), dir = new Vector3f(), toCam = new Vector3f(), side = new Vector3f();
+			for (int i = 0; i + 1 < this.count; i += 2) {
+				int o = i * 4;
+				a.set(this.points[o], this.points[o + 1], this.points[o + 2]);
+				b.set(this.points[o + 4], this.points[o + 5], this.points[o + 6]);
+				int color = Float.floatToRawIntBits(this.points[o + 3]);
+				b.sub(a, dir);
+				if (dir.lengthSquared() < 1e-10F) {
+					continue;
+				}
+				// From the segment's middle to the camera; half a width of about a pixel and a half
+				// at 1080p, whatever the distance.
+				toCam.set(cx, cy, cz).sub((a.x() + b.x()) * 0.5F, (a.y() + b.y()) * 0.5F, (a.z() + b.z()) * 0.5F);
+				float half = Math.max(0.006F, 0.0012F * toCam.length());
+				dir.cross(toCam, side);
+				if (side.lengthSquared() < 1e-12F) {
+					continue;
+				}
+				side.normalize(half);
+				// Counter-clockwise seen from the camera (side = dir x toCam, so +side first).
+				batch.add(a.x() + side.x(), a.y() + side.y(), a.z() + side.z(), u, v, color, 0xF000F0, OverlayTexture.NO_OVERLAY);
+				batch.add(b.x() + side.x(), b.y() + side.y(), b.z() + side.z(), u, v, color, 0xF000F0, OverlayTexture.NO_OVERLAY);
+				batch.add(b.x() - side.x(), b.y() - side.y(), b.z() - side.z(), u, v, color, 0xF000F0, OverlayTexture.NO_OVERLAY);
+				batch.add(a.x() - side.x(), a.y() - side.y(), a.z() - side.z(), u, v, color, 0xF000F0, OverlayTexture.NO_OVERLAY);
+			}
+		}
 	}
 
 	@Override

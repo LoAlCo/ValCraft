@@ -408,6 +408,12 @@ public final class ValClient {
 			if (player.getAbilities().flying) {
 				flags |= Proto.MC_FLYING;
 			}
+			if (player.isEyeInFluid(net.minecraft.tags.FluidTags.WATER)) {
+				flags |= Proto.MC_EYE_IN_WATER;
+			}
+			if (player.isEyeInFluid(net.minecraft.tags.FluidTags.LAVA)) {
+				flags |= Proto.MC_EYE_IN_LAVA;
+			}
 			mc.x = feet.x;
 			mc.y = feet.y;
 			mc.z = feet.z;

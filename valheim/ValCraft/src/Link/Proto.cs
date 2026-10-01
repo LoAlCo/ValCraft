@@ -46,6 +46,8 @@ namespace ValCraft.Link
         public const uint McDead = 1u << 5;
         public const uint McSwimming = 1u << 6;
         public const uint McFlying = 1u << 7;
+        public const uint McEyeInWater = 1u << 8;  // in a Minecraft water / lava block
+        public const uint McEyeInLava = 1u << 9;
 
         // overlay triple buffer
         public const uint OverlayDirty = 1u << 2;

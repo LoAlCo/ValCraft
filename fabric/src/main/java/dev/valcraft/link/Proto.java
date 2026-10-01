@@ -198,6 +198,9 @@ public final class Proto {
 	public static final int MC_DEAD = 1 << 5;
 	public static final int MC_SWIMMING = 1 << 6;
 	public static final int MC_FLYING = 1 << 7;
+	/** The eye is in a Minecraft water / lava block (Valheim's own sea is Valheim's to check). */
+	public static final int MC_EYE_IN_WATER = 1 << 8;
+	public static final int MC_EYE_IN_LAVA = 1 << 9;
 
 	// Overlay
 	public static final long OC_STATE = 0x00;
