@@ -17,6 +17,9 @@ is new.
 
 ## Play
 
+**New here? Follow [INSTALL.md](INSTALL.md)**: download the release zip, import it into Gale, and launch.
+The rest of this section covers the details.
+
 **You need:** Valheim on Steam, a Microsoft account that owns Minecraft: Java Edition, and Gale (or
 r2modman) with a profile containing BepInExPack_Valheim. Budget about 3 GB of extra RAM for Minecraft.
 
