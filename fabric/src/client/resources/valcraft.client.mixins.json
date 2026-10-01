@@ -1,0 +1,28 @@
+{
+  "required": true,
+  "package": "dev.valcraft.client.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "CameraZoomMixin",
+    "ChatComponentMixin",
+    "ClientLevelAccessor",
+    "EntityCollideMixin",
+    "FramerateLimitTrackerMixin",
+    "InputConstantsMixin",
+    "IntegratedServerMixin",
+    "LevelExtractorMixin",
+    "LevelRendererMixin",
+    "MinecraftMixin",
+    "RenderSetupAccessor",
+    "RenderTypeAccessor",
+    "ScreenMixin",
+    "SpriteContentsAccessor",
+    "TextureAtlasAccessor",
+    "TextureBindingAccessor",
+    "TextureManagerAccessor",
+    "WaitingForPlayerChunkMixin",
+    "WindowMixin",
+    "WorldOpenFlowsMixin"
+  ],
+  "injectors": { "defaultRequire": 1 }
+}

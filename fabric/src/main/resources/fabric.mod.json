@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "valcraft",
+  "version": "${version}",
+  "name": "ValCraft",
+  "description": "Play Valheim with Minecraft physics, inventory and viewmodels.",
+  "authors": ["LoAlCo", "chasmlol (SkyCraft, the original)"],
+  "contact": {
+    "sources": "https://github.com/LoAlCo/ValCraft2"
+  },
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "main": ["dev.valcraft.ValCraft"],
+    "client": ["dev.valcraft.client.ValCraftClient"]
+  },
+  "mixins": [
+    "valcraft.mixins.json",
+    { "config": "valcraft.client.mixins.json", "environment": "client" }
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~26.3",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}

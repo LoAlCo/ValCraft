@@ -1,0 +1,19 @@
+# gradle / loom
+fabric/.gradle/
+fabric/build/
+fabric/run/
+fabric/out/
+# ide
+.vs/
+.idea/
+*.iml
+.tools/
+# release packaging
+dist/
+# local tools and settings
+fabric/run-guest*/
+__pycache__/
+*.pyc
+# dotnet
+valheim/**/bin/
+valheim/**/obj/

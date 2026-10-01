@@ -1,0 +1,25 @@
+{
+  "required": true,
+  "package": "dev.valcraft.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": [
+    "AbstractArrowMixin",
+    "BlockCollisionsMixin",
+    "BlockStateBaseMixin",
+    "EntityFluidInteractionMixin",
+    "EntityPickMixin",
+    "EntitySwimMixin",
+    "FallingBlockMixin",
+    "FlowingFluidMixin",
+    "ItemMixin",
+    "MinecraftServerFlightMixin",
+    "PlayerEdgeMixin",
+    "PressurePlateMixin",
+    "ProjectileMixin",
+    "ProjectileUtilMixin",
+    "ServerExplosionMixin",
+    "ServerPlayerMixin",
+    "SmithingMixin"
+  ],
+  "injectors": { "defaultRequire": 1 }
+}

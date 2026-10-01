@@ -1,0 +1,319 @@
+using System.Collections.Generic;
+using BepInEx.Configuration;
+using UnityEngine;
+using ValCraft.Link;
+
+namespace ValCraft
+{
+    // Combat both ways (SkyCraft's Combat.cpp, for Valheim).
+    //  - Every Valheim creature near the player goes into the actor table; Minecraft mirrors each as an
+    //    invisible, hittable stand-in, so swords, crits, sweeps, bows and tridents work on it with
+    //    Minecraft's own code.
+    //  - Minecraft's hits come back as events and are applied to the real creature through Valheim's
+    //    own damage path (hit reaction, stagger, aggro, loot, skill gain).
+    //  - Valheim's hits on the player are cancelled and sent to Minecraft as damage from the attacker's
+    //    stand-in, so Minecraft's armour, shields, knockback and death decide what happens.
+    public static unsafe class Combat
+    {
+        public static ConfigEntry<float> DamageScale;
+        public static ConfigEntry<float> Range;
+
+        static readonly ActorRecord[] _records = new ActorRecord[Proto.MaxActors];
+        static readonly Dictionary<uint, Character> _byId = new Dictionary<uint, Character>();
+        static readonly List<(float d, Character c)> _near = new List<(float, Character)>();
+        static float _tableTimer;
+
+        public static void Init(ConfigFile config)
+        {
+            DamageScale = config.Bind("Combat", "DamageScale", 4f,
+                "Minecraft damage x this = Valheim damage (a diamond sword's 7, or 10.5 on a crit, becomes 28 / 42). Valheim's hits on you are divided by 5 on the Minecraft side.");
+            Range = config.Bind("Combat", "Range", 48f, "Valheim creatures within this many metres get Minecraft stand-ins.");
+        }
+
+        public static uint IdOf(Character c)
+        {
+            var id = c.GetZDOID();
+            uint h = (uint)id.ID * 2654435761u ^ (uint)id.UserID ^ (uint)(id.UserID >> 32);
+            return h == 0 ? 1u : h;
+        }
+
+        // Main thread, every frame.
+        public static void Frame(float dt)
+        {
+            var player = Player.m_localPlayer;
+            bool active = Puppet.Puppeting && player && Shm.Valid;
+
+            _tableTimer -= dt;
+            if (_tableTimer <= 0f)
+            {
+                _tableTimer = 0.05f;  // 20 Hz, Minecraft's tick rate; ProxySync puts the stand-ins exactly each frame
+                WriteTable(active ? player : null);
+            }
+
+            while (Shm.PopEvent(out var ev))
+            {
+                if (!active) continue;
+                try { OnEvent(player, ev); }
+                catch (System.Exception e) { Plugin.Error("combat event: " + e); }
+            }
+        }
+
+        static void WriteTable(Player player)
+        {
+            _byId.Clear();
+            _near.Clear();
+            int count = 0;
+            if (player)
+            {
+                var me = player.transform.position;
+                float range = Range.Value;
+                foreach (var c in Character.GetAllCharacters())
+                {
+                    if (!c || c == player || c.GetZDOID().IsNone()) continue;
+                    float d = (c.transform.position - me).sqrMagnitude;
+                    if (d < range * range) _near.Add((d, c));
+                }
+                _near.Sort((a, b) => a.d.CompareTo(b.d));
+                foreach (var (_, c) in _near)
+                {
+                    if (count >= Proto.MaxActors) break;
+                    uint id = IdOf(c);
+                    _byId[id] = c;
+                    var r = new ActorRecord();
+                    r.formId = id;
+                    uint flags = 0;
+                    if (BaseAI.IsEnemy(c, player)) flags |= 1;          // hostile
+                    if (c.IsDead()) flags |= 2;                         // dead
+                    if (c.IsTamed() || c.IsPlayer()) flags |= 4;        // essential: never killed by Minecraft
+                    var ai = c.GetBaseAI();
+                    if (ai && ai.IsAlerted()) flags |= 8;               // in combat
+                    r.flags = flags;
+                    var p = Coords.ToMc(c.transform.position);
+                    r.x = (float)p.x; r.y = (float)p.y; r.z = (float)p.z;
+                    r.yaw = Coords.UnityYawToMc(c.transform.eulerAngles.y);
+                    Size(c, out r.width, out r.height);
+                    r.healthFrac = Mathf.Clamp01(c.GetHealthPercentage());
+                    r.level = (ushort)Mathf.Max(1, c.GetLevel());
+                    WriteName(ref r, Localization.instance != null ? Localization.instance.Localize(c.m_name) : c.m_name);
+                    _records[count++] = r;
+                }
+            }
+            Shm.WriteActors(_records, count);
+        }
+
+        static void Size(Character c, out float width, out float height)
+        {
+            var col = c.GetCollider();
+            if (col is CapsuleCollider cap)
+            {
+                var s = cap.transform.lossyScale;
+                width = cap.radius * 2f * Mathf.Max(Mathf.Abs(s.x), Mathf.Abs(s.z));
+                height = cap.height * Mathf.Abs(s.y);
+            }
+            else if (col)
+            {
+                var b = col.bounds.size;
+                width = Mathf.Max(b.x, b.z);
+                height = b.y;
+            }
+            else { width = 0.6f; height = 1.8f; }
+            width = Mathf.Clamp(width, 0.2f, 8f);
+            height = Mathf.Clamp(height, 0.2f, 12f);
+        }
+
+        static void WriteName(ref ActorRecord r, string name)
+        {
+            var bytes = System.Text.Encoding.UTF8.GetBytes(name ?? "");
+            int n = Mathf.Min(bytes.Length, 23);
+            fixed (byte* dst = r.name)
+            {
+                for (int i = 0; i < n; i++) dst[i] = bytes[i];
+                dst[n] = 0;
+            }
+        }
+
+        const uint EvHitActor = 1, EvPlayerDied = 2, EvExplosion = 3, EvArrowStuck = 4, EvSkillUse = 5, EvValheimHit = 6;
+        const uint HitCritical = 1, HitProjectile = 2, HitSweep = 4, HitFire = 8;
+        const uint WeaponUnarmed = 0, WeaponBlade = 1, WeaponAxe = 2, WeaponBlunt = 3, WeaponPierce = 4, WeaponArrow = 5;
+
+        static void OnEvent(Player player, McEvent ev)
+        {
+            switch (ev.type)
+            {
+                case EvHitActor:
+                    if (_byId.TryGetValue(ev.formId, out var target) && target && !target.IsDead()) HitActor(player, target, ev);
+                    break;
+                case EvPlayerDied:
+                    Plugin.Log("Minecraft player died: the Viking dies too");
+                    player.SetHealth(0f);
+                    break;
+                case EvExplosion:
+                    Explosion(player, new Vector3d(ev.a, ev.b, ev.c), ev.d);
+                    break;
+                case EvSkillUse:
+                    // Minecraft reports shield blocks as ActorValue 9 (Block).
+                    if (ev.formId == 9) player.RaiseSkill(Skills.SkillType.Blocking, Mathf.Clamp(ev.a, 0.1f, 5f));
+                    break;
+                case EvValheimHit:
+                    Harvest(player, ev.formId, new Vector3d(ev.a, ev.b, ev.c), ev.d);
+                    break;
+                case EvArrowStuck:
+                default:
+                    break;
+            }
+        }
+
+        // ---- Minecraft tools on Valheim's world --------------------------------------------------
+
+        const uint ToolNone = 0, ToolSword = 1, ToolAxe = 2, ToolPickaxe = 3, ToolShovel = 4, ToolHoe = 5;
+        static readonly Collider[] _probe = new Collider[16];
+        static GameObject _digPrefab;
+
+        // A swing that landed on Valheim geometry: axes chop trees and logs, pickaxes break rocks, ore
+        // and buildings and dig the ground, shovels dig. Valheim's own hit handling does the rest
+        // (effects, drops, tool-tier checks); a Minecraft tier maps to Valheim's one higher (wood =
+        // antler/flint, stone = bronze, iron = iron, diamond = black metal, netherite beyond).
+        static void Harvest(Player player, uint tool, Vector3d atMc, float strength)
+        {
+            uint kind = tool & 0xF;
+            int tier = (int)((tool >> 4) & 0xF);
+            var point = Coords.ToValheim(atMc);
+            int n = Physics.OverlapSphereNonAlloc(point, 0.3f, _probe, ~0, QueryTriggerInteraction.Ignore);
+            IDestructible target = null;
+            Collider targetCol = null;
+            bool terrain = false;
+            float best = float.MaxValue;
+            for (int i = 0; i < n; i++)
+            {
+                var col = _probe[i];
+                if (!col || (WorldRender.Root && col.transform.IsChildOf(WorldRender.Root))) continue;
+                if (col.attachedRigidbody && col.attachedRigidbody.GetComponent<Character>()) continue;  // creatures: Minecraft's own attack
+                float d = Vector3.Distance(point, col.ClosestPoint(point));
+                if (col.GetComponentInParent<Heightmap>()) { if (d < 0.35f) terrain = true; continue; }
+                var dest = col.GetComponentInParent<IDestructible>();
+                if (dest != null && d < best) { best = d; target = dest; targetCol = col; }
+            }
+            float power = Mathf.Clamp(strength, 0.2f, 1f);
+            if (target != null)
+            {
+                var hit = new HitData();
+                hit.SetAttacker(player);
+                hit.m_hitType = HitData.HitType.PlayerHit;
+                hit.m_point = point;
+                hit.m_dir = (point - player.GetEyePoint()).normalized;
+                hit.m_hitCollider = targetCol;
+                hit.m_toolTier = (short)(tier + 1);
+                float amount = (12f + 6f * tier) * power;  // diamond axe 30: about a Valheim bronze axe
+                switch (kind)
+                {
+                    case ToolAxe: hit.m_damage.m_chop = amount; hit.m_damage.m_slash = amount * 0.5f; hit.m_skill = Skills.SkillType.WoodCutting; break;
+                    case ToolPickaxe: hit.m_damage.m_pickaxe = amount; hit.m_damage.m_pierce = amount * 0.3f; hit.m_skill = Skills.SkillType.Pickaxes; break;
+                    case ToolSword: hit.m_damage.m_slash = amount * 0.5f; hit.m_skill = Skills.SkillType.Swords; break;
+                    case ToolShovel: case ToolHoe: case ToolNone: default: hit.m_damage.m_blunt = 4f * power; break;
+                }
+                target.Damage(hit);
+                return;
+            }
+            if (terrain && (kind == ToolPickaxe || kind == ToolShovel) && power > 0.5f) Dig(player, point);
+        }
+
+        static void Dig(Player player, Vector3 point)
+        {
+            if (!_digPrefab && ObjectDB.instance)
+                foreach (var go in ObjectDB.instance.m_items)
+                {
+                    var shared = go ? go.GetComponent<ItemDrop>()?.m_itemData.m_shared : null;
+                    if (shared != null && shared.m_spawnOnHitTerrain && shared.m_skillType == Skills.SkillType.Pickaxes) { _digPrefab = shared.m_spawnOnHitTerrain; break; }
+                }
+            if (_digPrefab) global::Attack.SpawnOnHitTerrain(point, _digPrefab, player, 0f, null, null);
+        }
+
+        static void HitActor(Player player, Character target, McEvent ev)
+        {
+            float amount = ev.a * DamageScale.Value;
+            var hit = new HitData();
+            hit.m_hitType = HitData.HitType.PlayerHit;
+            hit.SetAttacker(player);
+            hit.m_point = target.GetCenterPoint();
+            var push = new Vector3(ev.b, 0f, -ev.c);
+            hit.m_dir = push.sqrMagnitude > 1e-6f ? push.normalized : (target.transform.position - player.transform.position).normalized;
+            hit.m_pushForce = ev.d * 40f;  // Minecraft knockback 0.4 (a plain hit) ~ a Valheim sword's push
+            hit.m_blockable = hit.m_dodgeable = false;
+            hit.m_ranged = (ev.flags & HitProjectile) != 0;
+            hit.m_staggerMultiplier = (ev.flags & HitCritical) != 0 ? 2f : 1f;
+            switch (ev.weapon)
+            {
+                case WeaponBlade: hit.m_damage.m_slash = amount; hit.m_skill = Skills.SkillType.Swords; break;
+                case WeaponAxe: hit.m_damage.m_slash = amount; hit.m_skill = Skills.SkillType.Axes; break;
+                case WeaponPierce: hit.m_damage.m_pierce = amount; hit.m_skill = Skills.SkillType.Spears; break;
+                case WeaponArrow: hit.m_damage.m_pierce = amount; hit.m_skill = Skills.SkillType.Bows; break;
+                case WeaponUnarmed: hit.m_damage.m_blunt = amount; hit.m_skill = Skills.SkillType.Unarmed; break;
+                default: hit.m_damage.m_blunt = amount; hit.m_skill = Skills.SkillType.Clubs; break;
+            }
+            if ((ev.flags & HitFire) != 0) hit.m_damage.m_fire = amount * 0.25f;
+            target.Damage(hit);
+            Plugin.Log($"hit {target.m_name} for {amount:F1} (Minecraft {ev.a:F1}, weapon {ev.weapon}, flags {ev.flags})");
+        }
+
+        // TNT and creepers: hurt Valheim creatures and break trees, rocks and building pieces like a
+        // big blunt hit, falling off with distance.
+        static void Explosion(Player player, Vector3d centreMc, float radius)
+        {
+            var centre = Coords.ToValheim(centreMc);
+            float reach = radius * 2f;
+            var seen = new HashSet<IDestructible>();
+            foreach (var col in Physics.OverlapSphere(centre, reach, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (WorldRender.Root && col.transform.IsChildOf(WorldRender.Root)) continue;
+                var d = col.GetComponentInParent<IDestructible>();
+                if (d == null || !seen.Add(d)) continue;
+                if (d is Character c && c == player) continue;  // Minecraft already hurt the player
+                var mb = d as MonoBehaviour;
+                if (!mb) continue;
+                float dist = Vector3.Distance(centre, col.ClosestPoint(centre));
+                float falloff = Mathf.Clamp01(1f - dist / reach);
+                if (falloff <= 0f) continue;
+                var hit = new HitData();
+                hit.SetAttacker(player);
+                hit.m_hitType = HitData.HitType.PlayerHit;
+                hit.m_point = col.ClosestPoint(centre);
+                hit.m_dir = (hit.m_point - centre).sqrMagnitude > 1e-4f ? (hit.m_point - centre).normalized : Vector3.up;
+                float amount = radius * 25f * falloff * DamageScale.Value / 4f;
+                hit.m_damage.m_blunt = amount;
+                hit.m_damage.m_chop = amount;
+                hit.m_damage.m_pickaxe = amount;
+                hit.m_pushForce = 60f * falloff;
+                hit.m_toolTier = 4;
+                d.Damage(hit);
+            }
+            Plugin.Log($"explosion at {centre} radius {radius}");
+        }
+
+        // ---- Valheim hits the player --------------------------------------------------------------
+
+        // Called from the RPC_Damage patch on the owner (us). Returns true if Minecraft takes the hit.
+        public static bool ForwardPlayerDamage(Player player, HitData hit)
+        {
+            if (!Puppet.Puppeting || !Shm.Valid) return false;
+            float total = hit.GetTotalDamage();
+            if (total <= 0f) return true;  // nothing to take; also swallow Valheim's own reaction
+            ushort kind;
+            switch (hit.m_hitType)
+            {
+                case HitData.HitType.EnemyHit:
+                case HitData.HitType.PlayerHit:
+                    kind = hit.m_ranged ? (ushort)1 : (ushort)0;
+                    if (hit.m_damage.m_fire + hit.m_damage.m_frost + hit.m_damage.m_lightning + hit.m_damage.m_spirit > total * 0.5f) kind = 2;
+                    break;
+                default:
+                    kind = 3;  // burning, poison, smoke, drowning, ...
+                    break;
+            }
+            var attacker = hit.GetAttacker();
+            uint attackerId = attacker ? IdOf(attacker) : 0;
+            int flags = hit.m_staggerMultiplier > 1.5f || hit.m_pushForce > 50f ? 2 : 0;  // power attack: extra shove
+            Shm.PushInput(Proto.InHurt, kind, Mathf.RoundToInt(total * 100f), (int)attackerId, flags);
+            return true;
+        }
+    }
+}

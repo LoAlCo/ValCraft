@@ -1,0 +1,7 @@
+This folder is Prism Launcher {PRISM_VERSION} (portable Windows build), unmodified, under the GPL-3.0
+(LICENSE-PrismLauncher.txt). Source: https://github.com/PrismLauncher/PrismLauncher
+
+The ValCraft instance (instances/ValCraft) runs Minecraft 26.3 with Fabric Loader, Fabric API
+(Apache-2.0, https://github.com/FabricMC/fabric) and the ValCraft Fabric mod (MIT).
+Minecraft, Java and Fabric Loader are downloaded by Prism after you sign in with a Microsoft account
+that owns Minecraft: Java Edition; they are not included.
