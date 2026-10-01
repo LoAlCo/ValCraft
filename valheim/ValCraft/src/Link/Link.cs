@@ -241,7 +241,8 @@ namespace ValCraft.Link
 
         public delegate void RenderSink(uint type, byte* payload, uint bytes);
 
-        public static void DrainRender(RenderSink sink, ulong maxBytes)
+        // deadline: a Stopwatch timestamp to stop at (the rest waits in the ring for the next frame); 0 for none.
+        public static void DrainRender(RenderSink sink, ulong maxBytes, long deadline = 0)
         {
             if (_base == null) return;
             byte* ring = _base + Proto.OffRenderRing;
@@ -252,7 +253,7 @@ namespace ValCraft.Link
             ulong head = Volatile.Read(ref *headRef);
             ulong tail = *tailRef;
             ulong done = 0;
-            while (tail < head && done < maxBytes)
+            while (tail < head && done < maxBytes && (deadline == 0 || System.Diagnostics.Stopwatch.GetTimestamp() < deadline))
             {
                 ulong pos = tail % size;
                 uint type = *(uint*)(data + pos);

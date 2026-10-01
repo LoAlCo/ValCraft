@@ -316,6 +316,11 @@ public final class ValClient {
 			&& ValCollision.isKnown(bx, by - ValCollision.REGION_SIZE, bz);
 		// Release once there is actual ground below (or after a timeout, e.g. when mid-air on purpose).
 		boolean ready = known && (ValCollision.hasSolidBelow(bx, by, bz, 12) || System.currentTimeMillis() - holdSince > 6000);
+		// Block terrain: wait for the blocks under the player to be built too (at most 8 s).
+		if ((sky.flags & Proto.VAL_BLOCK_TERRAIN) != 0) {
+			ready = known && dev.valcraft.world.TerrainGen.isBuilt(Math.floorDiv(bx, 16), Math.floorDiv(bz, 16))
+				|| System.currentTimeMillis() - holdSince > 8000;
+		}
 		if (ready && sky.inGame() && !sky.loading()) {
 			// Valheim's feet can sit a fraction of a voxel inside our ground layer. Minecraft's
 			// collision never pushes you out of a shape, so you'd drop through: lift out first.

@@ -153,6 +153,7 @@ public final class Proto {
 	public static final int VAL_IN_GAME = 1;
 	public static final int VAL_MENU_OPEN = 1 << 1;
 	public static final int VAL_LOADING = 1 << 2;
+	public static final int VAL_BLOCK_TERRAIN = 1 << 3; // ValCraft: block terrain on (the "-blocks" save, see TerrainGen)
 
 	// McState (relative to OFF_MC_STATE)
 	public static final long MS_SEQ = 0x00;
@@ -226,6 +227,7 @@ public final class Proto {
 	public static final int COL_CLEAR = 1;
 	public static final int COL_REGION = 2;
 	public static final int COL_TRIS = 3;
+	public static final int COL_TERRAIN = 4; // ValCraft: a chunk's column heights and biomes for block terrain
 	public static final int COL_TRI_BYTES = 40;
 	public static final int TRI_STAIR_HELPER = 1;
 	public static final int COL_REGION_HEADER_BYTES = 32;

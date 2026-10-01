@@ -13,7 +13,7 @@ namespace ValCraft
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "loalco.valcraft";
-        public const string Version = "0.1.2";
+        public const string Version = "0.2.0";
 
         public static Plugin Instance;
         public static bool Paused;  // F7: Valheim has its own controls back
@@ -39,10 +39,13 @@ namespace ValCraft
             }
             Combat.Init(Config);
             Launcher.Init(Config);
+            BlockTerrain.Init(Config);
             Loot.Load();
             Collision.Start();
             new Harmony(Guid).PatchAll();
             gameObject.AddComponent<Runner>();
+            gameObject.AddComponent<PhaseEarly>();
+            gameObject.AddComponent<PhaseLate>();
             // As early as possible: Minecraft takes about as long to start as Valheim does to reach its menu.
             Launcher.StartMinecraft();
             Logger.LogInfo($"ValCraft {Version} loaded. Start Minecraft with the ValCraft Fabric mod; it connects on its own.");
@@ -67,11 +70,11 @@ namespace ValCraft
         {
             try
             {
-                InputBridge.Frame();
-                Puppet.Frame(Time.unscaledDeltaTime);
-                WorldRender.Frame(Time.unscaledDeltaTime);
-                Combat.Frame(Time.unscaledDeltaTime);
-                Overlay.Upload();
+                long t = Prof.Start(); InputBridge.Frame(); Prof.Stop("input", t);
+                t = Prof.Start(); Puppet.Frame(Time.unscaledDeltaTime); Prof.Stop("puppet", t);
+                t = Prof.Start(); WorldRender.Frame(Time.unscaledDeltaTime); Prof.Stop("render", t);
+                t = Prof.Start(); Combat.Frame(Time.unscaledDeltaTime); Prof.Stop("combat", t);
+                t = Prof.Start(); Overlay.Upload(); Prof.Stop("overlay", t);
                 Report();
             }
             catch (Exception e)

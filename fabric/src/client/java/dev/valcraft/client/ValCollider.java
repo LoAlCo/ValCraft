@@ -31,6 +31,10 @@ public final class ValCollider {
 	 * it arrives. Never for more than two seconds in a row, so a region that never comes can't pin
 	 * the player.
 	 */
+	private static boolean blockTerrain() {
+		return (ValClient.sky().flags & dev.valcraft.link.Proto.VAL_BLOCK_TERRAIN) != 0;
+	}
+
 	private static boolean destinationUnknown(AABB box, Vec3 move) {
 		AABB to = box.move(move);
 		int[] xs = { (int) Math.floor(to.minX), (int) Math.floor(to.maxX) };
@@ -40,6 +44,10 @@ public final class ValCollider {
 			for (int y : ys) {
 				for (int z : zs) {
 					if (!ValCollision.isKnown(x, y, z)) {
+						return true;
+					}
+					// Block terrain: the ground is Minecraft blocks, built as Valheim sends it.
+					if (blockTerrain() && !dev.valcraft.world.TerrainGen.isBuilt(Math.floorDiv(x, 16), Math.floorDiv(z, 16))) {
 						return true;
 					}
 				}

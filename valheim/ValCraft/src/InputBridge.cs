@@ -17,6 +17,7 @@ namespace ValCraft
         public const Key UseKey = Key.G;
         public const Key MapKey = Key.M;
         public const Key ToggleKey = Key.F7;
+        public const Key TerrainKey = Key.F8;  // block terrain on/off
         public const Key OptionsKey = Key.O;  // Minecraft's pause/options screen (Esc is Valheim's)
 
         static float _lookDx, _lookDy;
@@ -63,6 +64,8 @@ namespace ValCraft
                 Plugin.Message(Plugin.Paused ? "ValCraft: Valheim controls (F7 for Minecraft)" : "ValCraft: Minecraft controls");
             }
 
+            if (kb != null && kb[TerrainKey].wasPressedThisFrame && Player.m_localPlayer && !Puppet.McScreenOpen) BlockTerrain.Toggle();
+
             if (!Route)
             {
                 _text.Clear();
@@ -81,7 +84,7 @@ namespace ValCraft
                     if (!Puppet.McScreenOpen)
                     {
                         // Keys Valheim keeps while no Minecraft screen is open.
-                        if (k == Key.Escape || k == MapKey || k == ToggleKey) continue;
+                        if (k == Key.Escape || k == MapKey || k == ToggleKey || k == TerrainKey) continue;
                         if (k == UseKey) { if (pressed) UseValheimTarget(); continue; }
                         if (k == OptionsKey) { if (pressed) { ReleaseAll(); Shm.PushInput(Proto.InOpenMenu, 0); } continue; }
                     }

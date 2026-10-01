@@ -199,6 +199,7 @@ public final class ValCollision {
 				case COL_CLEAR -> clear(s.get(JAVA_INT, payload));
 				case COL_REGION -> readRegion(s, payload);
 				case COL_TRIS -> readTris(s, payload);
+				case COL_TERRAIN -> readTerrain(s, payload);
 				default -> ValCraft.LOG.warn("ValCraft: unknown collision message {}", type);
 			}
 			tail += align8(8 + payloadBytes);
@@ -308,6 +309,19 @@ public final class ValCollision {
 			}
 		}
 		TRIS.put(regionKey(Math.floorDiv(minX, REGION_SIZE), Math.floorDiv(minY, REGION_SIZE), Math.floorDiv(minZ, REGION_SIZE)), java.util.Arrays.copyOf(tris, kept));
+	}
+
+	/** cx, cz, epoch, pad; then 256 columns [x + 16 z] of {short top, byte biome, byte flags}. */
+	private static void readTerrain(MemorySegment s, long p) {
+		int cx = s.get(JAVA_INT, p), cz = s.get(JAVA_INT, p + 4);
+		short[] top = new short[256];
+		byte[] biome = new byte[256];
+		for (int i = 0; i < 256; i++) {
+			long c = p + 16 + i * 4L;
+			top[i] = s.get(JAVA_SHORT, c);
+			biome[i] = s.get(JAVA_BYTE, c + 2);
+		}
+		TerrainGen.receive(cx, cz, top, biome);
 	}
 
 	public static int triangleCount() {

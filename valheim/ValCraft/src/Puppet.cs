@@ -42,6 +42,7 @@ namespace ValCraft
         static float _holdMismatch;
         static float _settleTimer = 2f;
         static bool _lookInitialized;
+        static bool _blockTerrain;
         static string _takeover;
         const float SettleSeconds = 1.5f;
         const float ValheimTeleportThreshold = 4f;  // metres; bigger jumps are Valheim moving the player
@@ -207,7 +208,12 @@ namespace ValCraft
             Interpolate(haveMc, out double feetX, out double feetY, out double feetZ, out double eyeX, out double eyeY, out double eyeZ,
                 out float bobPhaseNow, out float bobAmountNow);
 
-            if (puppet)
+            // While Minecraft holds the player in place (after a teleport or world switch, until the
+            // ground under them has arrived) its camera and mouse look stay on, as long as it's holding
+            // them where Valheim's player is.
+            bool holding = !puppet && MinecraftOwnsPlayer && haveMc &&
+                           Vector3.Distance(Coords.ToValheim(Mc.x, Mc.y, Mc.z), current) < 4f;
+            if (puppet || holding)
             {
                 FeetPos = Coords.ToValheim(feetX, feetY, feetZ);
 
@@ -269,14 +275,30 @@ namespace ValCraft
             var velocity = Vector3.zero;
             if (puppet && Mc.tickMs > 0f)
                 velocity = new Vector3((float)(Mc.curX - Mc.prevX), (float)(Mc.curY - Mc.prevY), (float)(Mc.curZ - Mc.prevZ)) * (1000f / Mc.tickMs);
+            // Block terrain switched: Minecraft changes saves, and collision goes again with (or without) the terrain.
+            if (BlockTerrain.On != _blockTerrain)
+            {
+                _blockTerrain = BlockTerrain.On;
+                ResetCollision();
+                _teleportPending = true;
+                _settleTimer = SettleSeconds;
+            }
+            long pt = Prof.Start();
             if (haveMc && !loading && _settleTimer <= 0f) Collision.Update(centre, velocity);
+            Prof.Stop("puppet/collision", pt);
+            pt = Prof.Start();
+            if (haveMc && McInWorld && !loading) BlockTerrain.Frame(centre, Epoch, dt);
+            Prof.Stop("puppet/terrain", pt);
+            pt = Prof.Start();
             if (haveMc && McInWorld && !loading && Time.frameCount % 3 == 0) Water.Write(centre, _worldId);
+            Prof.Stop("puppet/water", pt);
         }
 
         static void WriteState(Player player, bool loading, bool menu)
         {
             var st = new ValState();
-            st.flags = (player != null ? Proto.ValInGame : 0u) | (menu ? Proto.ValMenuOpen : 0u) | (loading ? Proto.ValLoading : 0u);
+            st.flags = (player != null ? Proto.ValInGame : 0u) | (menu ? Proto.ValMenuOpen : 0u) | (loading ? Proto.ValLoading : 0u) |
+                       (BlockTerrain.On ? Proto.ValBlockTerrain : 0u);
             st.worldId = _worldId;
             st.collisionEpoch = Epoch;
             if (player != null)

@@ -25,6 +25,7 @@ public final class ValCraft implements ModInitializer {
 		dev.valcraft.net.ValNet.init();
 		ServerLifecycleEvents.SERVER_STARTED.register(ValCraft::configureServer);
 		net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(dev.valcraft.world.TimeSync::tick);
+		net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(dev.valcraft.world.TerrainGen::tick);
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
 			giveStarterKit(handler.getPlayer());
 			giveBuilderKit(handler.getPlayer());

@@ -45,6 +45,8 @@ namespace ValCraft
             public int rx, ry, rz;
             public uint epoch;
             public bool clear;
+            public uint rawType;   // a ready-made message (block terrain) to write as is
+            public byte[] raw;
             public List<float> tris = new List<float>();     // 9 floats per triangle, MC space
             public List<Obb> boxes = new List<Obb>();
             public List<Capsule> capsules = new List<Capsule>();
@@ -67,6 +69,8 @@ namespace ValCraft
             _worker = new Thread(WorkerLoop) { IsBackground = true, Name = "ValCraft collision" };
             _worker.Start();
         }
+
+        public static void EnqueueRaw(uint type, byte[] payload) => _queue.Add(new Job { rawType = type, raw = payload });
 
         public static void Reset(uint epoch)
         {
@@ -209,6 +213,8 @@ namespace ValCraft
                 if (OwnRoot && col.transform.IsChildOf(OwnRoot)) continue;
                 if (col.attachedRigidbody && col.attachedRigidbody.GetComponent<Character>()) continue;
                 if (IsSwingingDoor(col)) continue;
+                // Block terrain: Minecraft's own blocks are the ground; Valheim's terrain stays only for its creatures.
+                if (BlockTerrain.On && col.GetComponentInParent<Heightmap>()) continue;
                 try { Collect(col, vb, job); }
                 catch (Exception e) { Plugin.Warn($"collision: skipped {col.name} ({e.Message})"); }
             }
@@ -385,6 +391,11 @@ namespace ValCraft
             {
                 try
                 {
+                    if (job.raw != null)
+                    {
+                        Send(job.rawType, job.raw, job.raw.Length);
+                        continue;
+                    }
                     if (job.clear)
                     {
                         Send(Proto.ColClear, BitConverter.GetBytes(job.epoch), 4);

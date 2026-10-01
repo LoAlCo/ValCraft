@@ -36,8 +36,13 @@ namespace ValCraft
             public GameObject go;
             public Mesh mesh;
             public MeshRenderer renderer;
-            public long[] submeshKeys;  // layer << 32 | colour, per submesh (materials assigned when ready)
+            public long[] submeshKeys;
+            public bool materialsSet;
+            public MeshFilter filter;  // layer << 32 | colour, per submesh (materials assigned when ready)
             public GameObject solids;
+            public ulong[] solidBits;   // Minecraft's solid blocks (bit x + 16z + 256y), kept until colliders are wanted
+            public bool solidsBuilt;
+            public int sx, sy, sz;
         }
 
         struct Emitter { public Vector3 pos; public int level; public Color color; public int kind; }
@@ -71,15 +76,26 @@ namespace ValCraft
             bool show = Player.m_localPlayer && Puppet.McConnected;
             if (_root.activeSelf != show) _root.SetActive(show);
 
-            Shm.DrainRender(OnMessage, 48ul << 20);
+            // About 4 ms of meshes a frame at most: a burst of new sections (block terrain) is spread
+            // over the next frames instead of stalling one.
+            Shm.DrainRender(OnMessage, 48ul << 20, System.Diagnostics.Stopwatch.GetTimestamp() + System.Diagnostics.Stopwatch.Frequency / 250);
+            long at = Prof.Start();
             if (_atlasDirty && _atlas) { _atlas.Apply(false, false); _atlasDirty = false; }
+            Prof.Stop("render/atlasapply", at);
             if (_pendingMaterials.Count > 0 && Player.m_localPlayer && BlockMaterials.FindShader() && _atlas)
             {
                 foreach (var s in _pendingMaterials) AssignMaterials(s);
                 _pendingMaterials.Clear();
             }
+            long st = Prof.Start();
+            UpdateSolids(dt);
+            Prof.Stop("render/solids", st);
+            long lt = Prof.Start();
             UpdateLights();
+            Prof.Stop("render/lights", lt);
+            long et = Prof.Start();
             Entities.Frame(_root.transform);
+            Prof.Stop("render/entities", et);
             SceneRender.Frame();
 
             _logTimer -= dt;
@@ -96,6 +112,7 @@ namespace ValCraft
         {
             _counts.TryGetValue(type, out int n);
             _counts[type] = n + 1;
+            long pt = Prof.Start();
             try
             {
                 switch (type)
@@ -116,6 +133,8 @@ namespace ValCraft
             {
                 Plugin.Error($"render message {type}: {e}");
             }
+            Prof.Stop(type == Proto.RenSection ? "render/section" : type == Proto.RenSolids ? "render/solids" : type == Proto.RenScene ? "render/scene"
+                : type == Proto.RenAtlasRegion ? "render/atlasregion" : "render/other", pt);
         }
 
         static void ClearAll()
@@ -180,6 +199,7 @@ namespace ValCraft
         static readonly List<Vector3> _nrm = new List<Vector3>();
         static readonly List<Vector2> _uv = new List<Vector2>();
         static readonly List<Color32> _col = new List<Color32>();
+        static readonly List<long> _keys = new List<long>();
 
         static void OnSection(byte* p, uint bytes)
         {
@@ -243,19 +263,31 @@ namespace ValCraft
                 s.renderer.motionVectorGenerationMode = MotionVectorGenerationMode.Camera;
                 _sections[key] = s;
             }
-            if (s.mesh) UnityEngine.Object.Destroy(s.mesh);
-            s.mesh = new Mesh { name = s.go.name, indexFormat = _pos.Count > 65000 ? IndexFormat.UInt32 : IndexFormat.UInt16 };
+            // Reused, not recreated: Minecraft re-sends a section whenever a neighbour changes (block
+            // terrain: often), and a new mesh each time churned GPU uploads and the garbage collector.
+            if (!s.mesh) { s.mesh = new Mesh { name = s.go.name }; s.mesh.MarkDynamic(); }
+            else s.mesh.Clear();
+            s.mesh.indexFormat = _pos.Count > 65000 ? IndexFormat.UInt32 : IndexFormat.UInt16;
             s.mesh.SetVertices(_pos);
             s.mesh.SetNormals(_nrm);
-            s.mesh.SetUVs(0, _uv);
-            s.mesh.SetColors(_col);
-            var keys = new List<long>();
-            foreach (var kv in _groups) if (kv.Value.Count > 0) keys.Add(kv.Key);
-            s.mesh.subMeshCount = keys.Count;
-            for (int i = 0; i < keys.Count; i++) s.mesh.SetTriangles(_groups[keys[i]], i, false);
+            s.mesh.SetUVs(0, _uv);  // vertex colours aren't uploaded: Standard doesn't read them (tint is per material)
+            _keys.Clear();
+            foreach (var kv in _groups) if (kv.Value.Count > 0) _keys.Add(kv.Key);
+            s.mesh.subMeshCount = _keys.Count;
+            for (int i = 0; i < _keys.Count; i++) s.mesh.SetTriangles(_groups[_keys[i]], i, false);
             s.mesh.RecalculateBounds();
-            s.go.GetComponent<MeshFilter>().sharedMesh = s.mesh;
-            s.submeshKeys = keys.ToArray();
+            var filter = s.filter ? s.filter : (s.filter = s.go.GetComponent<MeshFilter>());
+            if (filter.sharedMesh != s.mesh) filter.sharedMesh = s.mesh;
+            // Same submeshes as last time (the usual case): the materials already match.
+            bool sameKeys = s.submeshKeys != null && s.submeshKeys.Length == _keys.Count && s.materialsSet;
+            for (int i = 0; sameKeys && i < _keys.Count; i++) sameKeys = s.submeshKeys[i] == _keys[i];
+            if (sameKeys)
+            {
+                s.renderer.enabled = true;
+                return;
+            }
+            s.submeshKeys = _keys.ToArray();
+            s.materialsSet = false;
             s.renderer.enabled = true;
             if (BlockMaterials.Ready && Player.m_localPlayer) AssignMaterials(s);
             else if (!_pendingMaterials.Contains(s)) _pendingMaterials.Add(s);
@@ -272,6 +304,7 @@ namespace ValCraft
                 mats[i] = BlockMaterials.Get(layer, (uint)(k & 0xFFFFFFFF));
             }
             s.renderer.sharedMaterials = mats;
+            s.materialsSet = true;
         }
 
         // ---- NPC collision --------------------------------------------------------------------
@@ -294,26 +327,160 @@ namespace ValCraft
             }
             if (s.solids) UnityEngine.Object.Destroy(s.solids);
             s.solids = null;
-            if (count <= 0 || bytes < 16 + 512) return;
-            ulong* bits = (ulong*)(p + 16);
+            s.solidsBuilt = false;
+            s.sx = sx; s.sy = sy; s.sz = sz;
+            if (count <= 0 || bytes < 16 + 512) { s.solidBits = null; return; }
+            // Kept, not built: colliders only go up near the player (UpdateSolids), a few a frame.
+            s.solidBits ??= new ulong[64];
+            ulong* src = (ulong*)(p + 16);
+            for (int i = 0; i < 64; i++) s.solidBits[i] = src[i];
+        }
+
+        // Colliders for Minecraft blocks exist only where someone could bump into them: within
+        // NearSolids of the player or of any active Valheim creature (Valheim simulates creatures well
+        // beyond where the player is, so following the player alone let a creature walk through a wall
+        // once the player left), built at most MaxSolidsPerFrame a frame, gone past FarSolids of all
+        // of them. Physics never holds more than that, and adding them is spread out.
+        const float NearSolids = 24f, FarSolids = 40f;
+        const int MaxSolidsPerFrame = 2;
+        static float _solidsScan;
+        static readonly List<Section> _solidsQueue = new List<Section>();
+        static readonly List<Vector3> _watchers = new List<Vector3>();
+
+        static void UpdateSolids(float dt)
+        {
+            _solidsScan -= dt;
+            if (_solidsScan <= 0f)
+            {
+                _solidsScan = 0.25f;
+                _solidsQueue.Clear();
+                _watchers.Clear();
+                if (Puppet.McInWorld) _watchers.Add(new Vector3((float)Puppet.Mc.x, (float)Puppet.Mc.y, (float)Puppet.Mc.z));
+                foreach (var c in Character.GetAllCharacters())
+                {
+                    if (!c || c.IsDead()) continue;
+                    var m = Coords.ToMc(c.transform.position);
+                    _watchers.Add(new Vector3((float)m.x, (float)m.y, (float)m.z));
+                }
+                if (_watchers.Count > 0)
+                {
+                    foreach (var sec in _sections.Values)
+                    {
+                        if (sec.solidBits == null && !sec.solids) continue;
+                        float d = Nearest(sec);
+                        if (d > FarSolids)
+                        {
+                            if (sec.solids) { UnityEngine.Object.Destroy(sec.solids); sec.solids = null; }
+                            sec.solidsBuilt = false;
+                        }
+                        else if (d < NearSolids && !sec.solidsBuilt && sec.solidBits != null) _solidsQueue.Add(sec);
+                    }
+                    _solidsQueue.Sort((a, b) => Nearest(a).CompareTo(Nearest(b)));
+                }
+            }
+            int built = 0;
+            while (_solidsQueue.Count > 0 && built < MaxSolidsPerFrame)
+            {
+                var sec = _solidsQueue[0];
+                _solidsQueue.RemoveAt(0);
+                if (sec.solidsBuilt || sec.solidBits == null || !sec.go) continue;
+                BuildSolids(sec);
+                built++;
+            }
+        }
+
+        // Distance from the section's box to the nearest player or creature (Minecraft coordinates).
+        static float Nearest(Section s)
+        {
+            var lo = new Vector3(s.sx * 16, s.sy * 16, s.sz * 16);
+            var hi = lo + new Vector3(16, 16, 16);
+            float best = float.MaxValue;
+            foreach (var w in _watchers)
+            {
+                var c = Vector3.Max(lo, Vector3.Min(hi, w));
+                best = Mathf.Min(best, (c - w).sqrMagnitude);
+            }
+            return Mathf.Sqrt(best);
+        }
+
+
+        static void BuildSolids(Section s)
+        {
+            s.solidsBuilt = true;
+            if (s.solids) { UnityEngine.Object.Destroy(s.solids); s.solids = null; }
+            int sx = s.sx, sy = s.sy, sz = s.sz;
+            var bits = s.solidBits;
             bool Solid(int x, int y, int z) { int b = x + 16 * z + 256 * y; return (bits[b >> 6] & (1ul << (b & 63))) != 0; }
-            s.solids = new GameObject("solids");
-            s.solids.transform.SetParent(s.go.transform, false);
-            if (_pieceLayer >= 0) s.solids.layer = _pieceLayer;
-            // Runs along x merged into one box each.
+
+            // With block terrain, creatures already walk on Valheim's own (hidden) ground, so blocks at
+            // or under it need no colliders. One ground height per column (Minecraft y); a section that's
+            // all underground is skipped outright.
+            var ground = _groundScratch;
+            bool terrain = BlockTerrain.On;
+            float lowestGround = float.MaxValue;
+            for (int z = 0; z < 16; z++)
+                for (int x = 0; x < 16; x++)
+                {
+                    float g = float.MinValue;
+                    if (terrain)
+                    {
+                        var v = Coords.ToValheim(sx * 16 + x + 0.5, 0, sz * 16 + z + 0.5);
+                        // + 0.6: the surface block's top rounds up to half a block above the ground; it's ground too.
+                        // No ground loaded there: no creatures either; leave the column out.
+                        g = Ground.Height(v, out float h) ? (float)(h - Coords.YOffset) + 0.6f : float.MaxValue;
+                    }
+                    ground[x + 16 * z] = g;
+                    lowestGround = Mathf.Min(lowestGround, g);
+                }
+            if (terrain && lowestGround >= sy * 16 + 16) return;
+
+            // Per layer, the solid blocks above the ground, merged into rectangles (greedy).
+            var mask = _maskScratch;
+            GameObject holder = null;
             for (int y = 0; y < 16; y++)
+            {
+                int wy = sy * 16 + y;
+                bool any = false;
                 for (int z = 0; z < 16; z++)
                     for (int x = 0; x < 16; x++)
                     {
-                        if (!Solid(x, y, z)) continue;
-                        int x1 = x;
-                        while (x1 + 1 < 16 && Solid(x1 + 1, y, z)) x1++;
-                        var box = s.solids.AddComponent<BoxCollider>();
-                        box.center = new Vector3((x + x1 + 1) * 0.5f, y + 0.5f, z + 0.5f);
-                        box.size = new Vector3(x1 - x + 1, 1f, 1f);
-                        x = x1;
+                        bool m = Solid(x, y, z) && wy + 1 > ground[x + 16 * z];
+                        mask[x + 16 * z] = m;
+                        any |= m;
                     }
+                if (!any) continue;
+                for (int z = 0; z < 16; z++)
+                    for (int x = 0; x < 16; x++)
+                    {
+                        if (!mask[x + 16 * z]) continue;
+                        int x1 = x;
+                        while (x1 + 1 < 16 && mask[x1 + 1 + 16 * z]) x1++;
+                        int z1 = z;
+                        while (z1 + 1 < 16)
+                        {
+                            bool row = true;
+                            for (int k = x; k <= x1 && row; k++) row = mask[k + 16 * (z1 + 1)];
+                            if (!row) break;
+                            z1++;
+                        }
+                        for (int zz = z; zz <= z1; zz++)
+                            for (int k = x; k <= x1; k++) mask[k + 16 * zz] = false;
+                        if (!holder)
+                        {
+                            holder = new GameObject("solids");
+                            holder.transform.SetParent(s.go.transform, false);
+                            if (_pieceLayer >= 0) holder.layer = _pieceLayer;
+                        }
+                        var box = holder.AddComponent<BoxCollider>();
+                        box.center = new Vector3((x + x1 + 1) * 0.5f, y + 0.5f, (z + z1 + 1) * 0.5f);
+                        box.size = new Vector3(x1 - x + 1, 1f, z1 - z + 1);
+                    }
+            }
+            s.solids = holder;
         }
+
+        static readonly float[] _groundScratch = new float[256];
+        static readonly bool[] _maskScratch = new bool[256];
 
         // ---- block lights -----------------------------------------------------------------------
 

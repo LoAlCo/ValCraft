@@ -48,6 +48,7 @@ To use your own launcher instead, set `[Minecraft] Launcher` / `Arguments` in
 | Esc / M | Valheim's menu / map |
 | O | Minecraft's options menu |
 | F7 | Hand the controls back to Valheim (and again to return) |
+| F8 | Block terrain on/off: Valheim's ground as real Minecraft blocks |
 
 ### What works
 
@@ -57,6 +58,7 @@ To use your own launcher instead, set `[Minecraft] Launcher` / `Arguments` in
 - **Combat:** Minecraft weapons and arrows hit Valheim creatures, and their hits come back as Minecraft damage, with armor and shields.
 - **Tools:** axes chop trees, pickaxes mine rocks and dig terrain, with Valheim's tool tiers.
 - **Loot:** Valheim loot goes into the Minecraft inventory (wood becomes oak logs, stone becomes cobblestone, and so on). Edit the mapping in `BepInEx/config/ValCraft.loot.txt`.
+- **Block terrain (F8):** Valheim's ground becomes real Minecraft blocks you can mine and build into, by biome, with ores below. It uses its own Minecraft save per world, so normal-mode builds stay apart.
 - **Time:** Minecraft's time of day follows Valheim's.
 - **Multiplayer:** you can play with unmodded Valheim players. They see your Viking walk, run, swim, crouch and jump, and fights and loot sync. They don't see your Minecraft blocks.
 

@@ -35,6 +35,7 @@ namespace ValCraft.Link
         public const uint ValInGame = 1u << 0;
         public const uint ValMenuOpen = 1u << 1;
         public const uint ValLoading = 1u << 2;
+        public const uint ValBlockTerrain = 1u << 3;  // ValCraft: block terrain on (Minecraft opens the -blocks save)
 
         // McState.flags
         public const uint McInWorld = 1u << 0;
@@ -88,6 +89,7 @@ namespace ValCraft.Link
         public const uint ColClear = 1;
         public const uint ColRegion = 2;
         public const uint ColTris = 3;
+        public const uint ColTerrain = 4;  // ValCraft block terrain: a chunk's column heights and biomes (see BlockTerrain)
         public const uint TriStairHelper = 1u << 0;
 
         // render ring (MC produces, Valheim consumes)

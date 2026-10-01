@@ -37,7 +37,9 @@ public final class MirrorWorld {
 			return null;
 		}
 		// Interiors (bit 31) live in the same save, shifted away from the surface (see Coords on the Valheim side).
-		return ValCraft.WORLD_NAME + "-" + Integer.toHexString(sky.worldId & 0x7FFFFFFF);
+		// Block terrain (Valheim's ground as Minecraft blocks) is a save of its own: normal-mode builds stay apart.
+		boolean blocks = (sky.flags & dev.valcraft.link.Proto.VAL_BLOCK_TERRAIN) != 0;
+		return ValCraft.WORLD_NAME + "-" + Integer.toHexString(sky.worldId & 0x7FFFFFFF) + (blocks ? "-blocks" : "");
 	}
 
 	/**
