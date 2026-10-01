@@ -14,6 +14,15 @@ public abstract class MinecraftMixin {
 		ValClient.beginFrame();
 	}
 
+	// Before extract, not render: GameRenderer.extract() is where the hand's sway angles are captured.
+	@Inject(
+		method = "renderFrame",
+		at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;extract(Lnet/minecraft/client/DeltaTracker;Z)V")
+	)
+	private void valcraft$beforeRender(boolean advanceGameTime, CallbackInfo ci) {
+		ValClient.beforeRender();
+	}
+
 	@Inject(
 		method = "renderFrame",
 		at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;render()V", shift = At.Shift.AFTER)

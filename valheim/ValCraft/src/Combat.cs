@@ -158,6 +158,10 @@ namespace ValCraft
                     Harvest(player, ev.formId, new Vector3d(ev.a, ev.b, ev.c), ev.d);
                     break;
                 case EvArrowStuck:
+                    // formId, a/b/c = where it hit (Minecraft), d = flight yaw, flags = flight pitch (float bits), weapon = arrow kind
+                    if (_byId.TryGetValue(ev.formId, out var shot) && shot)
+                        Render.StuckArrows.Stick(shot, new Vector3d(ev.a, ev.b, ev.c), ev.d, System.BitConverter.Int32BitsToSingle((int)ev.flags), (int)ev.weapon);
+                    break;
                 default:
                     break;
             }

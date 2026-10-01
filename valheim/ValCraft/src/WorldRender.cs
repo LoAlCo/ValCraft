@@ -43,6 +43,7 @@ namespace ValCraft
         struct Emitter { public Vector3 pos; public int level; public Color color; public int kind; }
 
         public static Transform Root => _root ? _root.transform : null;
+        public static int AtlasWidth => _atlas ? _atlas.width : 0;
 
         static long Key(int x, int y, int z) =>
             ((long)(x & 0x1FFFFF) << 42) | ((long)(y & 0x1FFFFF) << 21) | (long)(z & 0x1FFFFF);

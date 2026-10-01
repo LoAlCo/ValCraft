@@ -139,6 +139,7 @@ namespace ValCraft.Render
                 case WeArrow:
                 case WeTrident:
                     {
+                        if (kind == WeArrow) StuckArrows.NoteArrowRect(Rect(uv, 0), WorldRender.AtlasWidth);
                         // Two crossed quads along the flight direction. Projectiles keep their angles
                         // the other way round from a player's look: they face (sin yaw, sin pitch, cos yaw).
                         float yr = yaw * Mathf.Deg2Rad, pr = pitch * Mathf.Deg2Rad;

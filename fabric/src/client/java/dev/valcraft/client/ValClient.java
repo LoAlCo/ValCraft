@@ -138,11 +138,50 @@ public final class ValClient {
 
 		// Look direction is driven by Valheim (zero-latency camera); MC uses it for everything else.
 		if (minecraft.gui.screen() == null) {
-			player.setYRot(sky.yaw);
+			// Valheim sends the yaw wrapped to 0..360; Minecraft's own yaw is continuous and its
+			// blends (hand sway, body turn) spin the long way round across a wrap. Keep it continuous.
+			float yaw = player.getYRot() + net.minecraft.util.Mth.wrapDegrees(sky.yaw - player.getYRot());
+			player.setYRot(yaw);
 			player.setXRot(sky.pitch);
-			player.yRotO = sky.yaw;
+			player.yRotO = yaw;
 			player.xRotO = sky.pitch;
 		}
+	}
+
+	// The hand's sway (it trails the view a little when turning), computed every frame: Minecraft eases
+	// it toward the look once per tick, which, with the look set from Valheim every frame and its yaw
+	// wrapped to 0..360, lagged far behind on fast turns and snapped back. Same feel: Minecraft halves
+	// the gap each 50 ms tick, a time constant of about 72 ms.
+	private static final double SWAY_SECONDS = 0.072;
+	private static float swayYaw, swayPitch;
+	private static long swayNanos;
+	private static LocalPlayer swayPlayer;
+
+	/** Just before GameRenderer.extract() (where the hand's sway is captured), after this frame's ticks. */
+	public static void beforeRender() {
+		LocalPlayer player = Minecraft.getInstance().player;
+		if (!linked || player == null) {
+			swayPlayer = null;
+			return;
+		}
+		float yaw = player.getYRot(), pitch = player.getXRot();
+		long now = System.nanoTime();
+		if (player != swayPlayer) {
+			swayPlayer = player;
+			swayYaw = yaw;
+			swayPitch = pitch;
+			swayNanos = now;
+		}
+		double dt = Math.min((now - swayNanos) / 1.0e9, 0.1);
+		swayNanos = now;
+		float k = (float) (1.0 - Math.exp(-dt / SWAY_SECONDS));
+		// The short way round, so crossing 0/360 is a small step, not a full turn.
+		float behind = net.minecraft.util.Mth.wrapDegrees(yaw - swayYaw);
+		swayYaw = yaw - behind * (1.0F - k);
+		swayPitch += (pitch - swayPitch) * k;
+		// Both the tick's old and new value: Minecraft's partial-tick blend then adds nothing.
+		player.yBob = player.yBobO = swayYaw;
+		player.xBob = player.xBobO = swayPitch;
 	}
 
 	// Minecraft is started with Valheim (the SKSE plugin launches it), so it goes when that Valheim has
