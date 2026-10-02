@@ -35,6 +35,11 @@ public final class ValClient {
 	private static int lastTeleportSeq = -1;
 	private static int teleportAck;
 	private static boolean teleportPending;
+	// A new player (joining, respawning, or F8 switching saves): once put down, it must not die
+	// from a fall, e.g. when the blocks it stood on only exist in the other save.
+	private static boolean landSafely, safeFalling;
+	private static boolean addedSlowFalling;  // server thread only
+	private static long safeFallUntil;
 	private static LocalPlayer lastPlayer;
 	private static Vec3 holdPos;
 	private static Vec3 unlinkedHold;
@@ -124,6 +129,7 @@ public final class ValClient {
 		if (player != lastPlayer) {
 			lastPlayer = player;
 			teleportPending = true;
+			landSafely = true;
 		}
 		if (sky.teleportSeq != lastTeleportSeq) {
 			lastTeleportSeq = sky.teleportSeq;
@@ -216,6 +222,7 @@ public final class ValClient {
 		DiscordPresence.tick(minecraft);
 		freezeWhileUnlinked(minecraft);
 		holdUntilReady(minecraft);
+		tickSafeFall(minecraft);
 		ValHarvest.tick(minecraft);
 		Vec3 held = ValCollider.takeHold();
 		if (held != null && minecraft.player != null) {
@@ -331,6 +338,10 @@ public final class ValClient {
 				ValCraft.LOG.info("ValCraft: put player {} blocks {} onto the ground", String.format("%.3f", Math.abs(safe.y - holdPos.y)), safe.y > holdPos.y ? "up" : "down");
 			}
 			holdPos = null;
+			if (landSafely) {
+				landSafely = false;
+				startSafeFall(minecraft);
+			}
 			return;
 		}
 		player.setDeltaMovement(Vec3.ZERO);
@@ -339,6 +350,63 @@ public final class ValClient {
 		player.yo = holdPos.y;
 		player.zo = holdPos.z;
 		player.resetFallDistance();
+	}
+
+	/**
+	 * Hidden Slow Falling until the player lands (at most 15 s): no fall damage, and a gentle drift
+	 * down if the floor it stood on isn't in this save. Fall damage is the integrated server's, so
+	 * the effect goes on the server player; a Slow Falling of the player's own is left alone.
+	 */
+	private static void startSafeFall(Minecraft minecraft) {
+		LocalPlayer player = minecraft.player;
+		if (player == null || player.onGround()) {
+			return;
+		}
+		safeFalling = true;
+		safeFallUntil = System.currentTimeMillis() + 15000;
+		var server = minecraft.getSingleplayerServer();
+		if (server == null) {
+			return;  // a friend's world: resetting the fall distance below is all we can do
+		}
+		var uuid = player.getUUID();
+		server.execute(() -> {
+			ServerPlayer sp = server.getPlayerList().getPlayer(uuid);
+			if (sp != null && !sp.hasEffect(net.minecraft.world.effect.MobEffects.SLOW_FALLING)) {
+				sp.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.SLOW_FALLING, 15 * 20, 0, false, false, false));
+				sp.resetFallDistance();
+				addedSlowFalling = true;
+			}
+		});
+		ValCraft.LOG.info("ValCraft: put down in mid-air after a world change: falling safely");
+	}
+
+	private static void tickSafeFall(Minecraft minecraft) {
+		LocalPlayer player = minecraft.player;
+		if (!safeFalling || player == null) {
+			return;
+		}
+		player.resetFallDistance();
+		if (!player.onGround() && !player.isInWater() && System.currentTimeMillis() < safeFallUntil) {
+			return;
+		}
+		safeFalling = false;
+		var server = minecraft.getSingleplayerServer();
+		if (server == null) {
+			return;
+		}
+		// On the server thread, after the task that added it (they run in order).
+		var uuid = player.getUUID();
+		server.execute(() -> {
+			if (!addedSlowFalling) {
+				return;
+			}
+			addedSlowFalling = false;
+			ServerPlayer sp = server.getPlayerList().getPlayer(uuid);
+			if (sp != null) {
+				sp.resetFallDistance();
+				sp.removeEffect(net.minecraft.world.effect.MobEffects.SLOW_FALLING);
+			}
+		});
 	}
 
 	private static Vec3 liftOutOfGeometry(LocalPlayer player, Vec3 pos) {

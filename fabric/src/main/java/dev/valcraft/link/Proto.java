@@ -74,6 +74,8 @@ public final class Proto {
 	public static final int EV_SKILL_USE = 5;
 	// ValCraft: a swing at Valheim's world. formId = tool (TOOL_* | tier << 4), a/b/c = where it hit (MC), d = attack strength (0..1)
 	public static final int EV_VALHEIM_HIT = 6;
+	/** BuildSync: formId = 1 when builds from the other terrain mode start arriving, 0 once they're in. */
+	public static final int EV_BUILD_SYNC = 7;
 	public static final int TOOL_NONE = 0, TOOL_SWORD = 1, TOOL_AXE = 2, TOOL_PICKAXE = 3, TOOL_SHOVEL = 4, TOOL_HOE = 5;
 	// Valheim skills (ActorValue) Minecraft reports use of; weapon skills come from EV_HIT_ACTOR.
 	public static final int SKILL_BLOCK = 9;

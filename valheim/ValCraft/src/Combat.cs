@@ -132,7 +132,7 @@ namespace ValCraft
             }
         }
 
-        const uint EvHitActor = 1, EvPlayerDied = 2, EvExplosion = 3, EvArrowStuck = 4, EvSkillUse = 5, EvValheimHit = 6;
+        const uint EvHitActor = 1, EvPlayerDied = 2, EvExplosion = 3, EvArrowStuck = 4, EvSkillUse = 5, EvValheimHit = 6, EvBuildSync = 7;
         const uint HitCritical = 1, HitProjectile = 2, HitSweep = 4, HitFire = 8;
         const uint WeaponUnarmed = 0, WeaponBlade = 1, WeaponAxe = 2, WeaponBlunt = 3, WeaponPierce = 4, WeaponArrow = 5;
 
@@ -156,6 +156,10 @@ namespace ValCraft
                     break;
                 case EvValheimHit:
                     Harvest(player, ev.formId, new Vector3d(ev.a, ev.b, ev.c), ev.d);
+                    break;
+                case EvBuildSync:
+                    // Minecraft is putting builds from the other terrain mode (F8) into this one.
+                    Plugin.Message(ev.formId != 0 ? "ValCraft: your builds from the other mode will appear shortly…" : "ValCraft: builds synced");
                     break;
                 case EvArrowStuck:
                     // formId, a/b/c = where it hit (Minecraft), d = flight yaw, flags = flight pitch (float bits), weapon = arrow kind

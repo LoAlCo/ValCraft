@@ -17,6 +17,14 @@ namespace ValCraft
         public static bool McScreenOpen;       // a Minecraft screen (inventory, chat, ...) is open
         public static bool ValheimMenuOpen;    // a Valheim menu owns input
         public static bool McInWorld;
+        // Minecraft stopped driving for a moment while still connected (F8 switching saves, the
+        // teleport handshake after it, a world change): the Viking is parked where it stands instead
+        // of falling, off builds that only exist in the other save, or through Valheim's ground while
+        // block terrain replaces it.
+        public static bool Parked;
+        public static Vector3 ParkPos;
+        static float _parkTime;
+        const float ParkSeconds = 60f;
         public static bool McConnected;
         public static McState Mc;
         public static float Yaw, Pitch;        // MC degrees; integrated from the mouse here
@@ -203,6 +211,24 @@ namespace ValCraft
             bool puppet = haveMc && McInWorld && Mc.teleportAck == _teleportSeq && !loading && !player.IsDead() && _takeover == null;
             MinecraftOwnsPlayer = puppet || (arriving && !player.IsDead());
             if (puppet != Puppeting) Plugin.Log("puppet " + (puppet ? "on (Minecraft drives the player)" : "off"));
+            bool park = !puppet && haveMc && !loading && !player.IsDead() && _takeover == null && !Plugin.Paused && (Puppeting || Parked);
+            if (park && !Parked)
+            {
+                Parked = true;
+                // Where it stands now: after a move of Valheim's own, that's already the destination.
+                ParkPos = player.transform.position;
+                _parkTime = 0f;
+                Plugin.Log("Minecraft isn't driving for a moment: holding the player in place");
+            }
+            if (Parked)
+            {
+                _parkTime += dt;
+                if (!park || _parkTime > ParkSeconds)
+                {
+                    Parked = false;
+                    Plugin.Log(park ? "Minecraft took too long; Valheim has the player back" : "Minecraft is back; releasing the hold");
+                }
+            }
             Puppeting = puppet;
 
             Interpolate(haveMc, out double feetX, out double feetY, out double feetZ, out double eyeX, out double eyeY, out double eyeZ,

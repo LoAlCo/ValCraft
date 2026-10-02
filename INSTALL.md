@@ -56,7 +56,7 @@ After the first time, just click **Launch game**. Minecraft starts and closes by
 | Esc / M | Valheim's menu / map |
 | O | Minecraft's options menu |
 | F7 | Switch back to normal Valheim controls (press again to return) |
-| F8 | Block terrain on/off: turns Valheim's ground into real Minecraft blocks (its own save, so your normal builds are kept apart) |
+| F8 | Block terrain on/off: turns Valheim's ground into real Minecraft blocks (your inventory and builds come along) |
 
 ## If something goes wrong
 

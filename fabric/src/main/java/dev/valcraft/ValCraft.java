@@ -26,7 +26,11 @@ public final class ValCraft implements ModInitializer {
 		ServerLifecycleEvents.SERVER_STARTED.register(ValCraft::configureServer);
 		net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(dev.valcraft.world.TimeSync::tick);
 		net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(dev.valcraft.world.TerrainGen::tick);
+		dev.valcraft.world.PlayerSync.init();
+		dev.valcraft.world.BuildSync.init();
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+			// First: the inventory shared across the two terrain saves (the kits check what's there).
+			dev.valcraft.world.PlayerSync.join(server, handler.getPlayer());
 			giveStarterKit(handler.getPlayer());
 			giveBuilderKit(handler.getPlayer());
 			dressTestGuest(handler.getPlayer());

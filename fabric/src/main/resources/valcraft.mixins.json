@@ -4,6 +4,10 @@
   "compatibilityLevel": "JAVA_25",
   "mixins": [
     "AbstractArrowMixin",
+    "BlockItemSyncMixin",
+    "BucketItemSyncMixin",
+    "CommandsSyncMixin",
+    "LevelSetBlockSyncMixin",
     "BlockCollisionsMixin",
     "BlockStateBaseMixin",
     "EntityFluidInteractionMixin",

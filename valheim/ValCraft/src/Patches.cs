@@ -23,8 +23,8 @@ namespace ValCraft
         static bool Prefix(Character __instance, float dt, Rigidbody ___m_body, ref float ___m_maxAirAltitude, ref float ___m_lastGroundTouch,
             ref float ___m_fallTimer, ref Vector3 ___m_currentVel, ZSyncAnimation ___m_zanim)
         {
-            if (!Puppet.Puppeting || __instance != Player.m_localPlayer || !___m_body) return true;
-            var target = Puppet.FeetPos;
+            if (!(Puppet.Puppeting || Puppet.Parked) || __instance != Player.m_localPlayer || !___m_body) return true;
+            var target = Puppet.Parked ? Puppet.ParkPos : Puppet.FeetPos;
             var prev = ___m_body.position;
             // Kinematic while Minecraft drives: still solid to creatures and other players (it pushes
             // them), but physics can't shove it. A dynamic body put down inside terrain (Minecraft
@@ -44,7 +44,7 @@ namespace ValCraft
             ___m_currentVel = dt > 0f ? (target - prev) / dt : Vector3.zero;  // what Valheim's animation reads
             ___m_maxAirAltitude = target.y;
             ___m_fallTimer = 0f;
-            if ((Puppet.Mc.flags & Link.Proto.McOnGround) != 0) ___m_lastGroundTouch = 0f;
+            if (Puppet.Parked || (Puppet.Mc.flags & Link.Proto.McOnGround) != 0) ___m_lastGroundTouch = 0f;
             // The body faces where Minecraft looks.
             ___m_body.rotation = Quaternion.Euler(0f, Coords.McYawToUnity(Puppet.Yaw), 0f);
             Animate(__instance, ___m_zanim, ___m_currentVel, dt);
