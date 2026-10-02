@@ -38,6 +38,8 @@ public class ValheimActorEntity extends LivingEntity {
 	private double pushX, pushZ;
 	private float pushStrength;
 	private boolean hitThisTick;
+	/** Hostile to the player in Valheim: Minecraft's monsters and iron golems go after it. */
+	private boolean hostile;
 
 	public ValheimActorEntity(EntityType<? extends ValheimActorEntity> type, Level level) {
 		super(type, level);
@@ -45,6 +47,14 @@ public class ValheimActorEntity extends LivingEntity {
 		this.noPhysics = true;
 		this.setInvisible(true);
 		this.setSilent(true);
+	}
+
+	public boolean hostile() {
+		return this.hostile;
+	}
+
+	public void setHostile(boolean hostile) {
+		this.hostile = hostile;
 	}
 
 	public int formId() {
@@ -98,6 +108,9 @@ public class ValheimActorEntity extends LivingEntity {
 		this.pendingWeapon = weaponClass(source);
 		if (source.is(net.minecraft.tags.DamageTypeTags.IS_FIRE)) {
 			this.pendingFlags |= Proto.HIT_FIRE;
+		}
+		if (!(source.getEntity() instanceof net.minecraft.world.entity.player.Player)) {
+			this.pendingFlags |= Proto.HIT_MOB;
 		}
 		this.hitThisTick = true;
 		this.getCombatTracker().recordDamage(source, dmg);

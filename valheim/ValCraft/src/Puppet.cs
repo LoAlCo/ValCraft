@@ -324,7 +324,7 @@ namespace ValCraft
         {
             var st = new ValState();
             st.flags = (player != null ? Proto.ValInGame : 0u) | (menu ? Proto.ValMenuOpen : 0u) | (loading ? Proto.ValLoading : 0u) |
-                       (BlockTerrain.On ? Proto.ValBlockTerrain : 0u);
+                       (BlockTerrain.On ? Proto.ValBlockTerrain : 0u) | Combat.MobPathingBits;
             st.worldId = _worldId;
             st.collisionEpoch = Epoch;
             if (player != null)

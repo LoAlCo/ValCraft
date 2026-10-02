@@ -86,6 +86,8 @@ public final class Proto {
 	public static final int HIT_PROJECTILE = 1 << 1;
 	public static final int HIT_SWEEP = 1 << 2;
 	public static final int HIT_FIRE = 1 << 3;
+	/** Hit by a Minecraft mob, not the player: no attacker in Valheim, no skill. */
+	public static final int HIT_MOB = 1 << 4;
 	public static final int WEAPON_UNARMED = 0;
 	public static final int WEAPON_BLADE = 1;
 	public static final int WEAPON_AXE = 2;
@@ -159,6 +161,8 @@ public final class Proto {
 	public static final int VAL_MENU_OPEN = 1 << 1;
 	public static final int VAL_LOADING = 1 << 2;
 	public static final int VAL_BLOCK_TERRAIN = 1 << 3; // ValCraft: block terrain on (the "-blocks" save, see TerrainGen)
+	/** ValCraft: mobs' pathfinding effort on Valheim terrain (bits 4-5): 0 balanced, 1 low, 2 high (TerrainPath). */
+	public static final int VAL_MOB_PATHING_SHIFT = 4;
 
 	// McState (relative to OFF_MC_STATE)
 	public static final long MS_SEQ = 0x00;

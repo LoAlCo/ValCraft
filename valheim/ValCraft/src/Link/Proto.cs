@@ -36,6 +36,8 @@ namespace ValCraft.Link
         public const uint ValMenuOpen = 1u << 1;
         public const uint ValLoading = 1u << 2;
         public const uint ValBlockTerrain = 1u << 3;  // ValCraft: block terrain on (Minecraft opens the -blocks save)
+        // ValCraft: how hard Minecraft's mobs plan their way over Valheim terrain (bits 4-5): 0 balanced, 1 low, 2 high.
+        public const int ValMobPathingShift = 4;
 
         // McState.flags
         public const uint McInWorld = 1u << 0;

@@ -53,11 +53,19 @@ namespace ValCraft
                 if (!on) ShowValheimGround();
             }
             if (epoch != _epoch) { _epoch = epoch; _sent.Clear(); }  // Minecraft dropped everything (new world): send again
-            if (!on) return;
+            if (!on)
+            {
+                // Valheim terrain: Minecraft still gets the ground's height around the player, which its
+                // mobs walk on (ValGround) instead of reading it from collision.
+                if (Player.m_localPlayer && !Coords.Interior) SendChunks(playerMc, PathingRadius);
+                return;
+            }
             _hideTimer -= dt;
             if (_hideTimer <= 0f) { _hideTimer = 0.5f; HideValheimGround(); }
-            SendChunks(playerMc);
+            SendChunks(playerMc, Radius.Value);
         }
+
+        const int PathingRadius = 64;
 
         static void HideValheimGround()
         {
@@ -84,10 +92,10 @@ namespace ValCraft
 
         // Nearest chunks first, a few per frame; each once per Minecraft session (Minecraft also
         // remembers which it built, so resending is harmless).
-        static void SendChunks(Vector3d p)
+        static void SendChunks(Vector3d p, int radius)
         {
             int pcx = Mathf.FloorToInt((float)p.x / 16f), pcz = Mathf.FloorToInt((float)p.z / 16f);
-            int r = Mathf.Clamp(Radius.Value, 16, 256) / 16;
+            int r = Mathf.Clamp(radius, 16, 256) / 16;
             int budget = 3;
             float now = Time.realtimeSinceStartup;
             if (_sent.Count > 4096) _sent.Clear();
@@ -106,7 +114,7 @@ namespace ValCraft
         }
 
         // Payload: cx, cz (Minecraft chunk), epoch, pad; then 256 columns [x + 16 z] of
-        // {short top (Minecraft y of the surface block), byte biome, byte flags}.
+        // {short top (Minecraft y of the surface block), byte biome, byte surface fraction}.
         static unsafe bool SendChunk(int cx, int cz)
         {
             var gen = WorldGenerator.instance;
@@ -125,12 +133,14 @@ namespace ValCraft
                         int mx = cx * 16 + x, mz = cz * 16 + z;
                         var v = Coords.ToValheim(mx + 0.5, 0, mz + 0.5);
                         if (!Ground.Height(v, out float h)) return false;
-                        int top = Mathf.RoundToInt(h - (float)Coords.YOffset) - 1;  // surface block's top face at the ground
+                        float surface = h - (float)Coords.YOffset;
+                        int top = Mathf.RoundToInt(surface) - 1;  // surface block's top face at the ground
                         var biome = gen.GetBiome(v.x, v.z);
                         byte* c = col + (x + 16 * z) * 4;
                         *(short*)c = (short)Mathf.Clamp(top, -1000, 1000);
                         c[2] = BiomeCode(biome);
-                        c[3] = 0;
+                        // The exact surface: top + 0.5 + c[3] / 255 (Minecraft's mobs walk on it, ValGround).
+                        c[3] = (byte)Mathf.Clamp(Mathf.RoundToInt((surface - top - 0.5f) * 255f), 0, 255);
                     }
             }
             // Through the collision worker: the collision ring has a single writer.

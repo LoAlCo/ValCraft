@@ -277,6 +277,9 @@ public final class BuildSync {
 			announce(false);
 			return;
 		}
+		if (s.getTickCount() % 4 != 0) {
+			return;  // five times a second is plenty (the queue can hold thousands of far-off changes)
+		}
 		ServerLevel level = s.overworld();
 		var lookup = level.holderLookup(Registries.BLOCK);
 		int applied = 0, waiting = 0;

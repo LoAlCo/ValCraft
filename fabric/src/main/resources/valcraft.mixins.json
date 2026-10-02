@@ -15,15 +15,20 @@
     "EntitySwimMixin",
     "FallingBlockMixin",
     "FlowingFluidMixin",
+    "GoalUtilsValheimMixin",
     "ItemMixin",
     "MinecraftServerFlightMixin",
+    "MobValheimTargetMixin",
+    "PathfindingValheimMixin",
+    "PathNavigationValheimMixin",
     "PlayerEdgeMixin",
     "PressurePlateMixin",
     "ProjectileMixin",
     "ProjectileUtilMixin",
     "ServerExplosionMixin",
     "ServerPlayerMixin",
-    "SmithingMixin"
+    "SmithingMixin",
+    "WalkNodeFloorValheimMixin"
   ],
   "injectors": { "defaultRequire": 1 }
 }

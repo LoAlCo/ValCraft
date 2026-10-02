@@ -25,6 +25,8 @@ public final class ValCollision {
 	public static final int REGION_SIZE = 8;
 
 	private static final ConcurrentHashMap<Long, VoxelShape> SHAPES = new ConcurrentHashMap<>();
+	/** Valheim's terrain surface per chunk, for mobs: 256 columns' surface block y, then 256 fractions (0..255). */
+	private static final ConcurrentHashMap<Long, short[]> TERRAIN = new ConcurrentHashMap<>();
 	// Per block: sub-voxel count (bits 0-9), any in the lower half (bit 10), any in the upper half (bit 11).
 	private static final ConcurrentHashMap<Long, Integer> FILL = new ConcurrentHashMap<>();
 	private static final int FILL_LOWER = 1 << 10;
@@ -222,6 +224,7 @@ public final class ValCollision {
 
 	private static void clear(int newEpoch) {
 		SHAPES.clear();
+		TERRAIN.clear();
 		FILL.clear();
 		TRIS.clear();
 		KNOWN_REGIONS.clear();
@@ -316,12 +319,48 @@ public final class ValCollision {
 		int cx = s.get(JAVA_INT, p), cz = s.get(JAVA_INT, p + 4);
 		short[] top = new short[256];
 		byte[] biome = new byte[256];
+		short[] surface = new short[512];
 		for (int i = 0; i < 256; i++) {
 			long c = p + 16 + i * 4L;
 			top[i] = s.get(JAVA_SHORT, c);
 			biome[i] = s.get(JAVA_BYTE, c + 2);
+			surface[i] = top[i];
+			surface[256 + i] = (short) (s.get(JAVA_BYTE, c + 3) & 0xFF);
 		}
+		TERRAIN.put(((long) cx << 32) ^ (cz & 0xFFFFFFFFL), surface);
 		TerrainGen.receive(cx, cz, top, biome);
+	}
+
+	/** The y of Valheim's terrain surface block at this column, or Integer.MIN_VALUE when not known. */
+	public static int terrainTop(int x, int z) {
+		short[] top = TERRAIN.get(((long) (x >> 4) << 32) ^ ((z >> 4) & 0xFFFFFFFFL));
+		return top == null ? Integer.MIN_VALUE : top[(x & 15) + 16 * (z & 15)];
+	}
+
+	/** The exact height of Valheim's terrain surface at this column, or NaN when not known. */
+	public static float terrainHeight(int x, int z) {
+		short[] t = TERRAIN.get(((long) (x >> 4) << 32) ^ ((z >> 4) & 0xFFFFFFFFL));
+		if (t == null) {
+			return Float.NaN;
+		}
+		int i = (x & 15) + 16 * (z & 15);
+		return t[i] + 0.5F + t[256 + i] / 255.0F;
+	}
+
+	/**
+	 * Where Valheim hasn't sent its detailed collision (beyond what's around the player), the terrain
+	 * surface stands in for it, so mobs wandering off don't drop out of the world. Null elsewhere.
+	 */
+	public static @Nullable VoxelShape terrainShapeAt(BlockPos pos) {
+		if (TERRAIN.isEmpty() || isKnown(pos.getX(), pos.getY(), pos.getZ())) {
+			return null;
+		}
+		float h = terrainHeight(pos.getX(), pos.getZ());
+		if (Float.isNaN(h) || pos.getY() > h) {
+			return null;
+		}
+		float up = Math.min(1.0F, h - pos.getY());
+		return up >= 0.999F ? Shapes.block() : up > 0.01F ? Shapes.box(0, 0, 0, 1, up, 1) : null;
 	}
 
 	public static int triangleCount() {

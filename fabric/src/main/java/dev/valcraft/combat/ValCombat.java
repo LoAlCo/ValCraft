@@ -117,6 +117,7 @@ public final class ValCombat {
 				proxy = new ValheimActorEntity(VALHEIM_ACTOR, level);
 				proxy.setFormId(a.formId());
 				proxy.setSize(a.width(), a.height());
+				proxy.setHostile(a.hostile());
 				proxy.snapTo(a.x(), a.y(), a.z(), a.yaw(), 0.0F);
 				if (!a.name().isEmpty()) {
 					proxy.setCustomName(Component.literal(a.name()));
@@ -128,6 +129,7 @@ public final class ValCombat {
 				continue;
 			}
 			proxy.setSize(a.width(), a.height());
+			proxy.setHostile(a.hostile());
 			proxy.setPos(a.x(), a.y(), a.z());
 			proxy.setYRot(a.yaw());
 			proxy.setYHeadRot(a.yaw());

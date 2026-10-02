@@ -62,11 +62,18 @@ To use your own launcher instead, set `[Minecraft] Launcher` / `Arguments` in
 - **Underwater:** diving under Valheim's sea (or into Minecraft water) gets fog, a tint, the surface seen from below, and muffled world sounds.
 - **Minecraft things:** entities (burning ones on fire), particles, chests and furnaces, TNT, arrows, fishing lines, leads, dropped items, and your own Minecraft body in third person.
 - **Combat:** Minecraft weapons and arrows hit Valheim creatures, and their hits come back as Minecraft damage, with armor and shields.
+- **Minecraft mobs:** they walk Valheim's terrain (around its rocks, logs and trees), and Minecraft's monsters and iron golems hunt Valheim's hostile creatures. How hard they plan their way is `[Mobs] Pathfinding` in the config (High, Balanced, Low) for slower PCs.
 - **Tools:** axes chop trees, pickaxes mine rocks and dig terrain, with Valheim's tool tiers.
 - **Loot:** Valheim loot goes into the Minecraft inventory (wood becomes oak logs, stone becomes cobblestone, and so on). Edit the mapping in `BepInEx/config/ValCraft.loot.txt`.
 - **Block terrain (F8):** Valheim's ground becomes real Minecraft blocks you can mine and build into, by biome, with ores below. It uses its own Minecraft save per world; your inventory, stats and builds follow you across both (blocks you dig out of the terrain stay in block mode).
 - **Time:** Minecraft's time of day follows Valheim's.
 - **Multiplayer:** you can play with unmodded Valheim players. They see your Viking walk, run, swim, crouch and jump, and fights and loot sync. They don't see your Minecraft blocks.
+
+## Known issues
+
+- Minecraft mobs sometimes spin in place for a moment when their path breaks.
+- Valheim creatures don't fight back at Minecraft mobs yet.
+- Minecraft items lying on the ground don't follow you across F8 (block terrain on/off).
 
 ## Layout
 

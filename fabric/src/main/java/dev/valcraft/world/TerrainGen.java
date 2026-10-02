@@ -67,8 +67,13 @@ public final class TerrainGen {
 		if (level != builtLevel) {
 			load(server, level);
 		}
+		ValGround.blockTerrainSave = server.getWorldData().getLevelName().endsWith("-blocks");
 		var sky = new dev.valcraft.link.ValLink.ValState();
-		if (!dev.valcraft.link.ValLink.readValState(sky) || (sky.flags & dev.valcraft.link.Proto.VAL_BLOCK_TERRAIN) == 0) {
+		boolean read = dev.valcraft.link.ValLink.readValState(sky);
+		if (read) {
+			TerrainPath.setQuality((sky.flags >> dev.valcraft.link.Proto.VAL_MOB_PATHING_SHIFT) & 3);
+		}
+		if (!read || (sky.flags & dev.valcraft.link.Proto.VAL_BLOCK_TERRAIN) == 0) {
 			QUEUE.clear();
 			return;
 		}

@@ -35,6 +35,9 @@ public abstract class BlockCollisionsMixin {
 			return blockShape; // this entity collides with Valheim's exact triangles instead (ValCollider)
 		}
 		VoxelShape sky = ValCollision.shapeAt(pos);
+		if (sky == null && !dev.valcraft.world.ValGround.blockTerrainSave) {
+			sky = ValCollision.terrainShapeAt(pos);  // past the detailed collision: the terrain surface
+		}
 		if (sky == null) {
 			return blockShape;
 		}

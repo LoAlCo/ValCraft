@@ -28,7 +28,16 @@ namespace ValCraft
             DamageScale = config.Bind("Combat", "DamageScale", 4f,
                 "Minecraft damage x this = Valheim damage (a diamond sword's 7, or 10.5 on a crit, becomes 28 / 42). Valheim's hits on you are divided by 5 on the Minecraft side.");
             Range = config.Bind("Combat", "Range", 48f, "Valheim creatures within this many metres get Minecraft stand-ins.");
+            MobPathing = config.Bind("Mobs", "Pathfinding", "Balanced",
+                new ConfigDescription("How hard Minecraft's mobs work out their way over Valheim's terrain. High: they plan further and react quickest. Low: lightest on the CPU, for slower PCs (mobs re-plan less often and over shorter distances).",
+                    new AcceptableValueList<string>("High", "Balanced", "Low")));
         }
+
+        public static ConfigEntry<string> MobPathing;
+        static readonly System.Reflection.FieldInfo LastHit = HarmonyLib.AccessTools.Field(typeof(Character), "m_lastHit");
+
+        /** Mobs' pathfinding setting for Minecraft (Proto.ValMobPathingShift). */
+        public static uint MobPathingBits => (MobPathing == null ? 0u : MobPathing.Value == "Low" ? 1u : MobPathing.Value == "High" ? 2u : 0u) << Proto.ValMobPathingShift;
 
         public static uint IdOf(Character c)
         {
@@ -133,7 +142,7 @@ namespace ValCraft
         }
 
         const uint EvHitActor = 1, EvPlayerDied = 2, EvExplosion = 3, EvArrowStuck = 4, EvSkillUse = 5, EvValheimHit = 6, EvBuildSync = 7;
-        const uint HitCritical = 1, HitProjectile = 2, HitSweep = 4, HitFire = 8;
+        const uint HitCritical = 1, HitProjectile = 2, HitSweep = 4, HitFire = 8, HitMob = 16;
         const uint WeaponUnarmed = 0, WeaponBlade = 1, WeaponAxe = 2, WeaponBlunt = 3, WeaponPierce = 4, WeaponArrow = 5;
 
         static void OnEvent(Player player, McEvent ev)
@@ -145,6 +154,9 @@ namespace ValCraft
                     break;
                 case EvPlayerDied:
                     Plugin.Log("Minecraft player died: the Viking dies too");
+                    // Valheim's death handling reads the last hit (for its death stats); setting the
+                    // health alone left it null, OnDeath threw, and the respawn never came.
+                    if (LastHit.GetValue(player) == null) LastHit.SetValue(player, new HitData { m_hitType = HitData.HitType.Undefined });
                     player.SetHealth(0f);
                     break;
                 case EvExplosion:
@@ -240,8 +252,11 @@ namespace ValCraft
         {
             float amount = ev.a * DamageScale.Value;
             var hit = new HitData();
-            hit.m_hitType = HitData.HitType.PlayerHit;
-            hit.SetAttacker(player);
+            // A Minecraft mob's hit (zombie, skeleton's arrow, creeper): no attacker, so the creature
+            // doesn't turn on the player for it, and no skill for the player.
+            bool byMob = (ev.flags & HitMob) != 0;
+            hit.m_hitType = byMob ? HitData.HitType.EnemyHit : HitData.HitType.PlayerHit;
+            if (!byMob) hit.SetAttacker(player);
             hit.m_point = target.GetCenterPoint();
             var push = new Vector3(ev.b, 0f, -ev.c);
             hit.m_dir = push.sqrMagnitude > 1e-6f ? push.normalized : (target.transform.position - player.transform.position).normalized;
@@ -259,6 +274,7 @@ namespace ValCraft
                 default: hit.m_damage.m_blunt = amount; hit.m_skill = Skills.SkillType.Clubs; break;
             }
             if ((ev.flags & HitFire) != 0) hit.m_damage.m_fire = amount * 0.25f;
+            if (byMob) hit.m_skill = Skills.SkillType.None;
             target.Damage(hit);
             Plugin.Log($"hit {target.m_name} for {amount:F1} (Minecraft {ev.a:F1}, weapon {ev.weapon}, flags {ev.flags})");
         }
