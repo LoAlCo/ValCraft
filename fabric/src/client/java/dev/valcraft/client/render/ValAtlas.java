@@ -36,6 +36,9 @@ final class ValAtlas {
 	 */
 	private static final class Animation {
 		NativeImage image;
+		int[] argb; // the whole frame strip, read once: per-pixel NativeImage reads are slow
+		int stride;
+		ByteBuffer out; // reused: the render ring copies a region as it's written
 		int x, y, w, h, pad;
 		int[] index, time;
 		int cycle, rowSize;
@@ -188,6 +191,13 @@ final class ValAtlas {
 		Animation animation = animationOf(sprite.contents());
 		if (animation != null) {
 			animation.image = image;
+			animation.stride = image.getWidth();
+			animation.argb = new int[image.getWidth() * image.getHeight()];
+			for (int py = 0; py < image.getHeight(); py++) {
+				for (int px = 0; px < image.getWidth(); px++) {
+					animation.argb[py * animation.stride + px] = image.getPixel(px, py);
+				}
+			}
 			animation.x = imageX;
 			animation.y = imageY + yOffset;
 			animation.w = w;
@@ -266,22 +276,28 @@ final class ValAtlas {
 			int next = (i + 1) % a.index.length;
 			float blend = a.interpolate ? (float) t / a.time[i] : 0.0F;
 			int pw = a.w + 2 * a.pad, ph = a.h + 2 * a.pad;
-			ByteBuffer out = ByteBuffer.allocateDirect(pw * ph * 4).order(ByteOrder.LITTLE_ENDIAN);
+			if (a.out == null) {
+				a.out = ByteBuffer.allocateDirect(pw * ph * 4).order(ByteOrder.LITTLE_ENDIAN);
+			}
+			java.nio.IntBuffer out = a.out.clear().asIntBuffer();
 			int fx0 = (a.index[i] % a.rowSize) * a.w, fy0 = (a.index[i] / a.rowSize) * a.h;
 			int fx1 = (a.index[next] % a.rowSize) * a.w, fy1 = (a.index[next] / a.rowSize) * a.h;
+			int[] src = a.argb;
 			for (int y = -a.pad; y < a.h + a.pad; y++) {
 				int sy = Math.clamp(y, 0, a.h - 1);
+				int row0 = (fy0 + sy) * a.stride + fx0, row1 = (fy1 + sy) * a.stride + fx1;
 				for (int x = -a.pad; x < a.w + a.pad; x++) {
 					int sx = Math.clamp(x, 0, a.w - 1);
-					int c = a.image.getPixel(fx0 + sx, fy0 + sy);
+					int c = src[row0 + sx];
 					if (blend > 0.0F) {
-						c = mix(c, a.image.getPixel(fx1 + sx, fy1 + sy), blend);
+						c = mix(c, src[row1 + sx], blend);
 					}
-					out.put((byte) (c >> 16)).put((byte) (c >> 8)).put((byte) c).put((byte) (c >>> 24));
+					// ARGB to RGBA bytes (little-endian int: A B G R)
+					out.put((c & 0xFF00FF00) | ((c >> 16) & 0xFF) | ((c & 0xFF) << 16));
 				}
 			}
-			out.flip();
-			if (send.test(new Region(a.x - a.pad, a.y - a.pad, pw, ph, out))) {
+			ByteBuffer bytes = a.out.duplicate().order(ByteOrder.LITTLE_ENDIAN).limit(pw * ph * 4);
+			if (send.test(new Region(a.x - a.pad, a.y - a.pad, pw, ph, bytes))) {
 				a.shown = key;
 			}
 		}

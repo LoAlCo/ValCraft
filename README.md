@@ -87,7 +87,7 @@ In `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor):
 - Minecraft mobs sometimes spin in place for a moment when their path breaks.
 - Valheim creatures don't fight back at Minecraft mobs yet.
 - Minecraft items lying on the ground don't follow you across F8 (block terrain on/off).
-- Pausing Valheim doesn't pause Minecraft yet, even when you play alone (planned for the next release).
+- Pausing Valheim doesn't pause Minecraft yet, even when you play alone (planned).
 - Minecraft's portals (Nether and End) don't work. They may or may not be added later.
 
 ## Layout

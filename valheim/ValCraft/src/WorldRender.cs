@@ -140,7 +140,12 @@ namespace ValCraft
 
         static void ClearAll()
         {
-            foreach (var s in _sections.Values) if (s.go) UnityEngine.Object.Destroy(s.go);
+            // The meshes too: destroying the GameObject leaves them behind, one world's worth per switch.
+            foreach (var s in _sections.Values)
+            {
+                if (s.mesh) UnityEngine.Object.Destroy(s.mesh);
+                if (s.go) UnityEngine.Object.Destroy(s.go);
+            }
             _sections.Clear();
             _emitters.Clear();
             _pendingMaterials.Clear();
@@ -182,8 +187,23 @@ namespace ValCraft
                 for (int row = 0; row < h; row++)
                     Buffer.MemoryCopy(src + row * w * 4, dst + (y + row) * stride + x * 4, w * 4, w * 4);
             }
-            _atlasDirty = true;
+            // Animated sprites change every game tick. Re-uploading the whole atlas (about 20 MB) for
+            // that stalls the GPU both games share, so only the patch goes up, copied in on the GPU.
+            // The CPU copy above stays current for any later full upload.
+            if (SystemInfo.copyTextureSupport == CopyTextureSupport.None) { _atlasDirty = true; return; }
+            long rk = ((long)x << 32) | (uint)y;
+            if (!_regions.TryGetValue(rk, out var patch) || !patch || patch.width != w || patch.height != h)
+            {
+                if (patch) UnityEngine.Object.Destroy(patch);
+                patch = new Texture2D(w, h, TextureFormat.RGBA32, false, false) { name = "ValCraft atlas patch" };
+                _regions[rk] = patch;
+            }
+            patch.LoadRawTextureData((IntPtr)src, w * h * 4);
+            patch.Apply(false, false);
+            Graphics.CopyTexture(patch, 0, 0, 0, 0, w, h, _atlas, 0, 0, x, y);
         }
+
+        static readonly Dictionary<long, Texture2D> _regions = new Dictionary<long, Texture2D>();
 
         // ---- section meshes -----------------------------------------------------------------
 

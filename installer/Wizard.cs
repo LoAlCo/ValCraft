@@ -54,6 +54,7 @@ namespace ValCraftInstaller
             StartPosition = FormStartPosition.CenterScreen;
             Font = new Font("Segoe UI", 9.75f);
             BackColor = SystemColors.Window;
+            try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch (Exception) { }  // the .exe's creeper, in the title bar too
 
             var footer = new Panel { Dock = DockStyle.Bottom, Height = 56, BackColor = SystemColors.Control };
             _next.Anchor = _back.Anchor = AnchorStyles.Right | AnchorStyles.Top;
