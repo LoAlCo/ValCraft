@@ -159,6 +159,17 @@ namespace ValCraft
 
         static readonly HashSet<string> _unmapped = new HashSet<string>();
 
+        // How much of a Minecraft item the player carries (less what's been spent and not yet taken).
+        public static int McCount(string id) => McHave(id);
+
+        // Something taken from Minecraft outside building (an offering): counted as spent until
+        // Minecraft's inventory catches up.
+        public static void Spent(string id, int count)
+        {
+            _pending.TryGetValue(id, out int spent);
+            _pending[id] = spent + count;
+        }
+
         static int McHave(string id)
         {
             _mcItems.TryGetValue(id, out int have);
@@ -372,7 +383,7 @@ namespace ValCraft
         }
 
         // "minecraft:oak_log" -> "Oak Log"
-        static string McName(string id)
+        public static string McName(string id)
         {
             int colon = id.IndexOf(':');
             var words = (colon >= 0 ? id.Substring(colon + 1) : id).Split('_');

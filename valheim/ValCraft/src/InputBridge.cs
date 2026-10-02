@@ -237,6 +237,8 @@ namespace ValCraft
             if (!player) return;
             var target = player.GetHoverObject();
             if (!target) { Plugin.Log($"{UseKey}: nothing to use under the crosshair"); return; }
+            // Altars, boss item stands and locked doors take their item without the Valheim inventory.
+            if (Offerings.TryOffer(player, target)) { Plugin.Log("offered at " + target.name); return; }
             _interact ??= AccessTools.Method(typeof(Player), "Interact", new[] { typeof(GameObject), typeof(bool), typeof(bool) });
             _interact?.Invoke(player, new object[] { target, false, false });
             Plugin.Log("used " + target.name);

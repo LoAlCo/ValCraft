@@ -87,6 +87,7 @@ Holding a Minecraft hoe or the **Build Hammer** (Valheim's build mode):
 - **Hoe:** a Minecraft hoe works like Valheim's: level ground, raise ground, paths and paved roads, from Valheim's own hoe menu. Stone costs come out of your Minecraft cobblestone.
 - **Building (experimental):** the **Build Hammer** (crafted from planks and sticks: three planks on top, planks either side of a stick, a stick below) builds with Valheim's own pieces, menu and workbench rules. The costs are Minecraft items from your inventory, shown with Minecraft's icons (Wood = oak logs, Stone = cobblestone, Surtling Core = fire charge, ...). Every piece is unlocked for now. Creative builds for free.
 - **Pausing:** pausing Valheim when you play alone pauses Minecraft too.
+- **Bosses:** the use key (G) at an altar, boss item stand or locked door offers its item for you, from your Minecraft inventory or the hidden Valheim inventory, and says where it came from. Boss items have Minecraft versions: ValCraft's own **Deer Trophy** (Eikthyr) and **Fuling Totem** (Yagluth), and Pitcher Pod (Ancient Seed), Skeleton Skull (Withered Bone), Sniffer Egg (Dragon Egg), Trial Key (Crypt Key), Ominous Trial Key (Sealbreaker) and Bell. Boss hits are scaled like any other creature's.
 - **Loot:** Valheim loot goes into the Minecraft inventory (wood becomes oak logs, stone becomes cobblestone, and so on). Edit the mapping in `BepInEx/config/ValCraft.loot.txt`.
 - **Block terrain (F8):** Valheim's ground becomes real Minecraft blocks you can mine and build into, by biome, with ores below. It uses its own Minecraft save per world; your inventory, stats and builds follow you across both (blocks you dig out of the terrain stay in block mode).
 - **Time:** Minecraft's time of day follows Valheim's.
@@ -117,6 +118,7 @@ In `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor, or
 - Minecraft items lying on the ground don't follow you across F8 (block terrain on/off).
 - Building with the Build Hammer is experimental and not everything has been tried.
 - Not every Valheim material has a Minecraft counterpart yet (some trophies and late-game items). Pieces that need one take it from the Valheim inventory, so they may not be buildable for now. More will be added; you can add your own in `ValCraft.loot.txt`.
+- The Queen's Sealbreaker and Fader's bells are crafted from fragments at Valheim's own crafting stations, which hasn't been tried with ValCraft yet.
 - Minecraft's portals (Nether and End) don't work. They may or may not be added later.
 
 ## Layout
@@ -126,7 +128,7 @@ In `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor, or
 | `valheim/ValCraft` | BepInEx plugin (C#): link, puppet, input, collision export, overlay, rendering, combat, loot, launcher |
 | `fabric/` | Fabric mod for Minecraft 26.3 (Java 25), forked from SkyCraft |
 | `protocol/valcraft_protocol.h` | Shared-memory layout, mirrored by `Link/Proto.cs` and `link/Proto.java` |
-| `tools/make_hammer_texture.py` | Draws the Build Hammer's 16x16 texture |
+| `tools/make_hammer_texture.py`, `tools/make_item_textures.py` | Draw ValCraft's 16x16 item textures (Build Hammer, Deer Trophy, Fuling Totem) |
 | `installer/` | The optional step-by-step installer (WinForms, .NET Framework 4.8 built into Windows); `make_icon.py` draws its icon |
 | `tools/package.py` | Builds both halves, the release zips and the installer into `dist/` |
 | `tools/minecraft-bundle/` | The Prism instance and settings packed into `ValCraft-Minecraft.zip` |

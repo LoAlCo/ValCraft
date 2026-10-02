@@ -94,7 +94,24 @@ Dandelion = minecraft:dandelion
 Thistle = minecraft:blue_orchid
 CarrotSeeds = minecraft:wheat_seeds
 TurnipSeeds = minecraft:beetroot_seeds
-" + BuildingMaterials;
+" + BuildingMaterials + BossItems;
+
+        // Added in 0.5.5: boss summoning items and keys, so they show up in Minecraft's inventory and
+        // the use key can offer them at altars, item stands and doors (Offerings).
+        const string BossItemsMarker = "# boss offerings and keys (ValCraft 0.5.5)";
+        const string BossItems = BossItemsMarker + @"
+TrophyDeer = valcraft:deer_trophy
+AncientSeed = minecraft:pitcher_pod
+WitheredBone = minecraft:skeleton_skull
+DragonEgg = minecraft:sniffer_egg
+GoblinTotem = valcraft:fuling_totem
+CryptKey = minecraft:trial_key
+Sealbreaker = minecraft:ominous_trial_key
+Bell = minecraft:bell
+";
+
+        // Blocks added to the loot table over time: appended once to older tables (see Load).
+        static readonly (string marker, string lines)[] Additions = { (BuildingMaterialsMarker, BuildingMaterials), (BossItemsMarker, BossItems) };
 
         // Added in 0.5.3 for Valheim building (the Build Hammer): its costs are paid in these, and
         // picking them up in Valheim gives them. Appended once to older loot tables (see Load).
@@ -134,23 +151,32 @@ AskHide = minecraft:rabbit_hide
             try
             {
                 if (!File.Exists(_path)) File.WriteAllText(_path, Defaults);
-                else if (!File.ReadAllText(_path).Contains(BuildingMaterialsMarker))
+                else
                 {
-                    // An older table: add the building materials once, without touching the user's lines
-                    // (any already listed keep theirs: a later line for the same item would win, so skip those).
+                    // An older table: add newer blocks once, without touching the user's lines (any item
+                    // already listed keeps its line: a later one for the same item would win, so skip those).
+                    string text = File.ReadAllText(_path);
                     var have = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                     foreach (var l in File.ReadAllLines(_path))
                     {
                         int e = l.IndexOf('=');
                         if (e > 0 && !l.TrimStart().StartsWith("#")) have.Add(l.Substring(0, e).Trim());
                     }
-                    var add = new StringBuilder(Environment.NewLine + BuildingMaterialsMarker + Environment.NewLine);
-                    foreach (var l in BuildingMaterials.Split('\n'))
+                    // Defaults that changed before release: rewrite the old line if it's still the old default.
+                    string updated = text.Replace("TrophyDeer = minecraft:goat_horn", "TrophyDeer = valcraft:deer_trophy")
+                                         .Replace("GoblinTotem = minecraft:totem_of_undying", "GoblinTotem = valcraft:fuling_totem");
+                    if (updated != text) { File.WriteAllText(_path, updated); text = updated; }
+                    foreach (var (marker, lines) in Additions)
                     {
-                        int e = l.IndexOf('=');
-                        if (e > 0 && !have.Contains(l.Substring(0, e).Trim())) add.Append(l.Trim()).Append(Environment.NewLine);
+                        if (text.Contains(marker)) continue;
+                        var add = new StringBuilder(Environment.NewLine + marker + Environment.NewLine);
+                        foreach (var l in lines.Split('\n'))
+                        {
+                            int e = l.IndexOf('=');
+                            if (e > 0 && !have.Contains(l.Substring(0, e).Trim())) add.Append(l.Trim()).Append(Environment.NewLine);
+                        }
+                        File.AppendAllText(_path, add.ToString());
                     }
-                    File.AppendAllText(_path, add.ToString());
                 }
                 _map.Clear();
                 foreach (var raw in File.ReadAllLines(_path))

@@ -356,7 +356,9 @@ namespace ValCraft
         public static bool ForwardPlayerDamage(Player player, HitData hit)
         {
             if (!Puppet.Puppeting || !Shm.Valid) return false;
-            float total = hit.GetTotalDamage();
+            // Only what hurts a player: chop, pickaxe and "non-player" damage are for trees, rocks and
+            // buildings (bosses carry over a thousand of it to smash the scenery around them).
+            float total = hit.GetTotalDamage() - hit.m_damage.m_chop - hit.m_damage.m_pickaxe - hit.m_damage.m_nonPlayer;
             if (total <= 0f) return true;  // nothing to take; also swallow Valheim's own reaction
             ushort kind;
             switch (hit.m_hitType)
