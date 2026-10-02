@@ -20,25 +20,23 @@ The earlier, non-passthrough ValCraft (Minecraft mechanics rebuilt inside Valhei
 
 ## Play
 
-**New here? Follow [INSTALL.md](INSTALL.md)**, or, if you'd like help, run the optional `ValCraft-Installer-<version>.exe` from Releases (it walks you through the same steps with Gale, r2modman or the Thunderstore Mod Manager): download the zip from
-[Releases](https://github.com/LoAlCo/ValCraft/releases/latest), import it into Gale, and launch.
-The rest of this section covers the details.
+**New here? Follow [INSTALL.md](INSTALL.md).** In short:
 
-**You need:** Valheim on Steam, a Microsoft account that owns Minecraft: Java Edition, and Gale (or
-r2modman) with a profile containing BepInExPack_Valheim. Budget about 3 GB of extra RAM for Minecraft.
-
-1. Build the package (`python tools/package.py`, see below) and import
-   `dist/LoAlCo-ValCraft-<version>.zip` into a Gale profile (Import local mod). It contains the
-   plugin and `ValCraft-Minecraft.zip`: a portable Prism Launcher with a ready Minecraft 26.3 +
-   Fabric instance.
-2. Launch the game from Gale, or double-click `tools/Play ValCraft.bat`. The script uses the
-   `MC-V2` profile; give it another profile's name as an argument to use that one.
-3. **First time only:** Valheim unpacks Minecraft to `%LOCALAPPDATA%\ValCraft` and starts Prism
-   Launcher. Alt-Tab to the Prism window, click through its quick setup, and add your Microsoft
-   account. Prism downloads Minecraft, Fabric and Java (a few minutes).
+1. Download **`LoAlCo-ValCraft-<version>.zip`** from [Releases](https://github.com/LoAlCo/ValCraft/releases/latest)
+   and import it into a Gale profile (File, then Import, then Local mod). It brings BepInEx with it.
+   Prefer a guided setup? Run the optional **`ValCraft-Installer-<version>.exe`** from the same page
+   instead: it walks you through everything, with Gale, r2modman or the Thunderstore Mod Manager.
+2. Launch the game from your mod manager.
+3. **First time only:** Valheim unpacks ValCraft's own Minecraft (a portable Prism Launcher with a
+   ready Minecraft 26.3 + Fabric instance) to `%LOCALAPPDATA%\ValCraft` and starts Prism Launcher.
+   Alt-Tab to it, click through its quick setup, and add your Microsoft account. Prism downloads
+   Minecraft, Fabric and Java (a few minutes).
 4. From then on it's automatic: Minecraft starts hidden with Valheim, opens a world of its own for
    each Valheim world, and quits when Valheim closes. Valheim says "ValCraft: Minecraft is ready"
    once they're linked.
+
+**You need:** Valheim on Steam, a Microsoft account that owns Minecraft: Java Edition, and about
+3 GB of free RAM for Minecraft on top of Valheim.
 
 To use your own launcher instead, set `[Minecraft] Launcher` / `Arguments` in
 `BepInEx/config/loalco.valcraft.cfg`, or `StartWithValheim = false` and start Minecraft yourself.
@@ -67,13 +65,30 @@ To use your own launcher instead, set `[Minecraft] Launcher` / `Arguments` in
 - **Loot:** Valheim loot goes into the Minecraft inventory (wood becomes oak logs, stone becomes cobblestone, and so on). Edit the mapping in `BepInEx/config/ValCraft.loot.txt`.
 - **Block terrain (F8):** Valheim's ground becomes real Minecraft blocks you can mine and build into, by biome, with ores below. It uses its own Minecraft save per world; your inventory, stats and builds follow you across both (blocks you dig out of the terrain stay in block mode).
 - **Time:** Minecraft's time of day follows Valheim's.
-- **Multiplayer:** you can play with unmodded Valheim players. They see your Viking walk, run, swim, crouch and jump, and fights and loot sync. They don't see your Minecraft blocks.
+- **Death:** dying in Minecraft kills your Viking too, with Valheim's death screen, tombstone and respawn.
+- **Multiplayer:** you can play with unmodded Valheim players. They see your Viking walk, run, swim, crouch and jump, and fights and loot sync. They don't see your Minecraft blocks or mobs.
+
+### Settings
+
+In `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor):
+
+| Setting | Does |
+|---|---|
+| `[Minecraft] StartWithValheim`, `Launcher`, `Arguments` | Whether Valheim starts the bundled Minecraft, or your own launcher |
+| `[Terrain] BlockTerrain` | Block terrain on at start (F8 toggles it in game) |
+| `[Terrain] Radius` | How far around you (metres) the ground becomes blocks |
+| `[Mobs] Pathfinding` | `High`, `Balanced` or `Low`: how hard Minecraft's mobs work out their way (Low for slower PCs) |
+| `[Combat] DamageScale` | Minecraft damage times this is the damage Valheim creatures take |
+| `[Combat] Range` | How far (metres) Valheim creatures can be fought from Minecraft |
+| `[Debug] Diagnostics` | Extra logging, for bug reports |
 
 ## Known issues
 
 - Minecraft mobs sometimes spin in place for a moment when their path breaks.
 - Valheim creatures don't fight back at Minecraft mobs yet.
 - Minecraft items lying on the ground don't follow you across F8 (block terrain on/off).
+- Pausing Valheim doesn't pause Minecraft yet, even when you play alone (planned for the next release).
+- Minecraft's portals (Nether and End) don't work. They may or may not be added later.
 
 ## Layout
 
@@ -82,7 +97,7 @@ To use your own launcher instead, set `[Minecraft] Launcher` / `Arguments` in
 | `valheim/ValCraft` | BepInEx plugin (C#): link, puppet, input, collision export, overlay, rendering, combat, loot, launcher |
 | `fabric/` | Fabric mod for Minecraft 26.3 (Java 25), forked from SkyCraft |
 | `protocol/valcraft_protocol.h` | Shared-memory layout, mirrored by `Link/Proto.cs` and `link/Proto.java` |
-| `installer/` | The optional step-by-step installer (WinForms, .NET Framework 4.8 built into Windows) |
+| `installer/` | The optional step-by-step installer (WinForms, .NET Framework 4.8 built into Windows); `make_icon.py` draws its icon |
 | `tools/package.py` | Builds both halves, the release zips and the installer into `dist/` |
 | `tools/minecraft-bundle/` | The Prism instance and settings packed into `ValCraft-Minecraft.zip` |
 | `tools/Play ValCraft.bat` | Starts Valheim with the ValCraft Gale profile |
@@ -91,13 +106,14 @@ To use your own launcher instead, set `[Minecraft] Launcher` / `Arguments` in
 
 ## Build
 
-Requirements: .NET 8 SDK, JDK 25, Python 3, and Valheim with a Gale profile that has BepInExPack_Valheim
+For working on ValCraft itself. Requirements: .NET 8 SDK, JDK 25, Python 3, and Valheim with a Gale profile that has BepInExPack_Valheim
 (`MC-V2` by default; `-p:ProfileDir=...` for another).
 
 ```
 python tools/package.py              # build both halves -> dist/ (downloads pinned Prism + Fabric API once)
 python tools/package.py --deploy     # ...and put ValCraft-Minecraft.zip into the MC-V2 profile too
 dotnet build valheim/ValCraft -c Release    # plugin only, deployed into the MC-V2 profile
+tools/Play ValCraft.bat              # start Valheim with the MC-V2 Gale profile (or name another)
 cd fabric && ./gradlew runClient     # Minecraft dev client with the mod (JAVA_HOME = JDK 25)
 bash tools/dev_valheim.sh            # Valheim windowed (1600x900), straight into the first world
 ```
