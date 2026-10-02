@@ -4,8 +4,9 @@
                                     "ValCraft" instance (Minecraft 26.3, Fabric, Fabric API, ValCraft)
   LoAlCo-ValCraft-<version>.zip     Thunderstore/Gale package: the BepInEx plugin + ValCraft-Minecraft.zip
   valcraft-fabric-<version>.jar     the Minecraft mod on its own (for your own launcher)
+  ValCraft-Installer-<version>.exe  optional step-by-step installer (installer/), with the package inside
 
-  python tools/package.py [--no-build] [--deploy]
+  python tools/package.py [--no-build] [--deploy] [--no-installer]
 
 --deploy also copies ValCraft-Minecraft.zip next to the plugin in the MC-V2 Gale profile, so the
 dev Valheim starts the bundled Minecraft itself (close the gradlew runClient one first).
@@ -166,6 +167,13 @@ def main():
     zip_folder(os.path.join(DIST, f"LoAlCo-ValCraft-{ver}.zip"), pkg)
     shutil.rmtree(pkg)
     shutil.copy(jar, os.path.join(DIST, f"valcraft-fabric-{ver}.jar"))
+
+    # The optional installer wizard, with this release's zip inside it (built after the zip, always).
+    if "--no-installer" not in args:
+        installer = os.path.join(ROOT, "installer")
+        mod_zip = os.path.join(DIST, f"LoAlCo-ValCraft-{ver}.zip")
+        run(["dotnet", "build", "-c", "Release", f"-p:ModZip={mod_zip}", f"-p:Version={ver}"], installer)
+        shutil.copy(os.path.join(installer, "bin", "Release", "net48", "ValCraft-Installer.exe"), os.path.join(DIST, f"ValCraft-Installer-{ver}.exe"))
 
     if "--deploy" in args:
         target = os.path.join(PROFILE, "BepInEx", "plugins", "ValCraft")

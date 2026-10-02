@@ -20,7 +20,7 @@ The earlier, non-passthrough ValCraft (Minecraft mechanics rebuilt inside Valhei
 
 ## Play
 
-**New here? Follow [INSTALL.md](INSTALL.md)**: download the zip from
+**New here? Follow [INSTALL.md](INSTALL.md)**, or, if you'd like help, run the optional `ValCraft-Installer-<version>.exe` from Releases (it walks you through the same steps with Gale, r2modman or the Thunderstore Mod Manager): download the zip from
 [Releases](https://github.com/LoAlCo/ValCraft/releases/latest), import it into Gale, and launch.
 The rest of this section covers the details.
 
@@ -75,7 +75,8 @@ To use your own launcher instead, set `[Minecraft] Launcher` / `Arguments` in
 | `valheim/ValCraft` | BepInEx plugin (C#): link, puppet, input, collision export, overlay, rendering, combat, loot, launcher |
 | `fabric/` | Fabric mod for Minecraft 26.3 (Java 25), forked from SkyCraft |
 | `protocol/valcraft_protocol.h` | Shared-memory layout, mirrored by `Link/Proto.cs` and `link/Proto.java` |
-| `tools/package.py` | Builds both halves and the release zips into `dist/` |
+| `installer/` | The optional step-by-step installer (WinForms, .NET Framework 4.8 built into Windows) |
+| `tools/package.py` | Builds both halves, the release zips and the installer into `dist/` |
 | `tools/minecraft-bundle/` | The Prism instance and settings packed into `ValCraft-Minecraft.zip` |
 | `tools/Play ValCraft.bat` | Starts Valheim with the ValCraft Gale profile |
 | `tools/dev_valheim.sh`, `tools/stop_minecraft.ps1` | Dev loop: Valheim windowed into the first world; close Minecraft cleanly (it saves) |

@@ -9,6 +9,15 @@ ValCraft lets you play Valheim as a Minecraft player. It takes about 10 minutes 
   ValCraft brings its own copy of Minecraft and downloads the game files for you.
 - About **3 GB of free RAM** on top of Valheim, and about 2 GB of disk space.
 
+There are two ways to install. Both end up the same; pick whichever you like.
+
+- **By hand:** follow Steps 1 to 4 below (Gale).
+- **Optional installer:** if you get stuck, or want help with r2modman or the Thunderstore Mod Manager,
+  download **`ValCraft-Installer-<version>.exe`** from
+  **https://github.com/LoAlCo/ValCraft/releases/latest** and run it. It walks you through the same
+  steps and checks each one for you. You never need it, and you can stop using it any time.
+  (Windows may warn about an unknown app: click More info, then Run anyway.)
+
 ## Step 1: Install Gale (the mod manager)
 
 1. Go to **https://github.com/Kesomannen/gale/releases/latest**.

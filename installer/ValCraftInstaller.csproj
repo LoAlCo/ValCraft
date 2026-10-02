@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The optional ValCraft installer: a small wizard for players who get stuck installing.
+       Built by tools/package.py, which passes the release zip to embed:
+         dotnet build installer -c Release -p:ModZip=<dist zip> -p:Version=<version>
+       .NET Framework 4.8 is part of Windows 10 and 11, so the .exe needs nothing installed. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>ValCraft-Installer</AssemblyName>
+    <RootNamespace>ValCraftInstaller</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version Condition="'$(Version)' == ''">0.0.0</Version>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Management" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ModZip)' != ''">
+    <EmbeddedResource Include="$(ModZip)" LogicalName="ValCraft.zip" />
+  </ItemGroup>
+
+</Project>

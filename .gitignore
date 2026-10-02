@@ -17,3 +17,5 @@ __pycache__/
 # dotnet
 valheim/**/bin/
 valheim/**/obj/
+installer/bin/
+installer/obj/
