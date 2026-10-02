@@ -38,6 +38,7 @@ namespace ValCraft.Link
         public const uint ValBlockTerrain = 1u << 3;  // ValCraft: block terrain on (Minecraft opens the -blocks save)
         // ValCraft: how hard Minecraft's mobs plan their way over Valheim terrain (bits 4-5): 0 balanced, 1 low, 2 high.
         public const int ValMobPathingShift = 4;
+        public const uint ValPaused = 1u << 6;  // Valheim's game is paused (single player, menu open): Minecraft pauses too
 
         // McState.flags
         public const uint McInWorld = 1u << 0;
@@ -50,6 +51,9 @@ namespace ValCraft.Link
         public const uint McFlying = 1u << 7;
         public const uint McEyeInWater = 1u << 8;  // in a Minecraft water / lava block
         public const uint McEyeInLava = 1u << 9;
+        public const uint McHoldingHoe = 1u << 10;     // ValCraft: a hoe / the Build Hammer in the main hand (BuildTools)
+        public const uint McCreative = 1u << 11;       // creative mode: building costs nothing
+        public const uint McHoldingHammer = 1u << 12;
 
         // overlay triple buffer
         public const uint OverlayDirty = 1u << 2;
@@ -113,6 +117,8 @@ namespace ValCraft.Link
         public const uint RenRagdoll = 9;
         public const uint RenSolids = 10;
         public const uint RenViewModel = 11;
+        public const uint RenInventory = 12;  // ValCraft: Minecraft's inventory, for building costs (BuildTools)
+        public const uint RenItemIcons = 13;  // ValCraft: every Minecraft item's icon in the atlas (BuildTools' cost list)
     }
 
     [StructLayout(LayoutKind.Sequential)]

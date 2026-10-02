@@ -49,6 +49,7 @@ namespace ValCraft
 
         public static Transform Root => _root ? _root.transform : null;
         public static int AtlasWidth => _atlas ? _atlas.width : 0;
+        public static Texture2D Atlas => _atlas;
 
         static long Key(int x, int y, int z) =>
             ((long)(x & 0x1FFFFF) << 42) | ((long)(y & 0x1FFFFF) << 21) | (long)(z & 0x1FFFFF);
@@ -127,6 +128,8 @@ namespace ValCraft
                     case Proto.RenScene: SceneRender.OnScene(_root.transform, p, bytes); break;
                     case Proto.RenAvatar: SceneRender.OnAvatar(_root.transform, p, bytes); break;
                     case Proto.RenViewModel: SceneRender.OnViewModel(p, bytes); break;
+                    case Proto.RenInventory: BuildTools.OnInventory(p, bytes); break;
+                    case Proto.RenItemIcons: BuildTools.OnItemIcons(p, bytes); break;
                     default: break;  // ragdoll: later
                 }
             }

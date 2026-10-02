@@ -22,6 +22,7 @@ public final class ValCraft implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		ValCombat.init();
+		dev.valcraft.item.ValItems.init();
 		dev.valcraft.net.ValNet.init();
 		ServerLifecycleEvents.SERVER_STARTED.register(ValCraft::configureServer);
 		net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(dev.valcraft.world.TimeSync::tick);

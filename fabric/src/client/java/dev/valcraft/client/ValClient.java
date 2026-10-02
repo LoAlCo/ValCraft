@@ -67,6 +67,11 @@ public final class ValClient {
 		return tookOver;
 	}
 
+	/** Valheim's game is paused (only ever in single player). */
+	public static boolean valheimPaused() {
+		return linked && sky.paused();
+	}
+
 	public static ValLink.ValState sky() {
 		return sky;
 	}
@@ -481,6 +486,15 @@ public final class ValClient {
 			}
 			if (player.isEyeInFluid(net.minecraft.tags.FluidTags.LAVA)) {
 				flags |= Proto.MC_EYE_IN_LAVA;
+			}
+			if (player.getMainHandItem().is(net.minecraft.tags.ItemTags.HOES)) {
+				flags |= Proto.MC_HOLDING_HOE;
+			}
+			if (player.getAbilities().instabuild) {
+				flags |= Proto.MC_CREATIVE;
+			}
+			if (player.getMainHandItem().is(dev.valcraft.item.ValItems.BUILD_HAMMER)) {
+				flags |= Proto.MC_HOLDING_HAMMER;
 			}
 			mc.x = feet.x;
 			mc.y = feet.y;

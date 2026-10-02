@@ -163,19 +163,26 @@ namespace ValCraft
     {
         static bool Blocked => InputBridge.BlockValheim;
 
+        // Holding a Minecraft hoe or the Build Hammer: Valheim's build buttons reach its build mode
+        // (see BuildTools): place (left click), menu (right click), and for the hammer remove
+        // (middle click) and its Shift variants. Alt + mouse wheel rotates (the wheel alone stays
+        // Minecraft's hotbar).
+        static bool HoeButton(string name) => BuildTools.Active &&
+            (name == "Attack" || name == "BuildMenu" || (BuildTools.Hammer && (name == "Remove" || name == "AltPlace")));
+
         [HarmonyPatch(typeof(ZInput), nameof(ZInput.GetButton)), HarmonyPrefix]
-        static bool GetButton(ref bool __result) { if (!Blocked) return true; __result = false; return false; }
+        static bool GetButton(string name, ref bool __result) { if (!Blocked || HoeButton(name)) return true; __result = false; return false; }
 
         [HarmonyPatch(typeof(ZInput), nameof(ZInput.GetButtonDown)), HarmonyPrefix]
         static bool GetButtonDown(string name, ref bool __result)
         {
-            if (!Blocked || (name == "Map" && InputBridge.AllowValheimMenuKeys)) return true;
+            if (!Blocked || (name == "Map" && InputBridge.AllowValheimMenuKeys) || HoeButton(name)) return true;
             __result = false;
             return false;
         }
 
         [HarmonyPatch(typeof(ZInput), nameof(ZInput.GetButtonUp)), HarmonyPrefix]
-        static bool GetButtonUp(ref bool __result) { if (!Blocked) return true; __result = false; return false; }
+        static bool GetButtonUp(string name, ref bool __result) { if (!Blocked || HoeButton(name)) return true; __result = false; return false; }
 
         [HarmonyPatch(typeof(ZInput), nameof(ZInput.GetKey)), HarmonyPrefix]
         static bool GetKey(ref bool __result) { if (!Blocked) return true; __result = false; return false; }
@@ -204,7 +211,7 @@ namespace ValCraft
         static bool GetMouseDelta(ref Vector2 __result) { if (!Blocked) return true; __result = Vector2.zero; return false; }
 
         [HarmonyPatch(typeof(ZInput), nameof(ZInput.GetMouseScrollWheel)), HarmonyPrefix]
-        static bool GetMouseScrollWheel(ref float __result) { if (!Blocked) return true; __result = 0f; return false; }
+        static bool GetMouseScrollWheel(ref float __result) { if (!Blocked || InputBridge.BuildRotate) return true; __result = 0f; return false; }
     }
 
     // Valheim hitting the player: Minecraft takes the hit instead (armour, shields, knockback, death).

@@ -94,6 +94,38 @@ Dandelion = minecraft:dandelion
 Thistle = minecraft:blue_orchid
 CarrotSeeds = minecraft:wheat_seeds
 TurnipSeeds = minecraft:beetroot_seeds
+" + BuildingMaterials;
+
+        // Added in 0.5.3 for Valheim building (the Build Hammer): its costs are paid in these, and
+        // picking them up in Valheim gives them. Appended once to older loot tables (see Load).
+        const string BuildingMaterialsMarker = "# building materials (ValCraft 0.5.3)";
+        const string BuildingMaterials = BuildingMaterialsMarker + @"
+GreydwarfEye = minecraft:spider_eye
+SurtlingCore = minecraft:fire_charge
+MoltenCore = minecraft:blaze_rod
+BronzeNails = minecraft:copper_nugget
+IronNails = minecraft:iron_nugget
+Tar = minecraft:ink_sac
+Chain = minecraft:iron_chain
+Thunderstone = minecraft:lightning_rod
+DragonTear = minecraft:ghast_tear
+SerpentScale = minecraft:turtle_scute
+Needle = minecraft:pointed_dripstone
+Eitr = minecraft:lapis_lazuli
+Sap = minecraft:honey_bottle
+RoyalJelly = minecraft:honey_bottle
+SoftTissue = minecraft:phantom_membrane
+Wisp = minecraft:glowstone_dust
+BlackCore = minecraft:echo_shard
+CeramicPlate = minecraft:brick
+Flametal = minecraft:netherite_ingot
+FlametalNew = minecraft:netherite_ingot
+Carapace = minecraft:armadillo_scute
+Bilebag = minecraft:fermented_spider_eye
+LinenThread = minecraft:string
+JuteRed = minecraft:red_wool
+JuteBlue = minecraft:blue_wool
+AskHide = minecraft:rabbit_hide
 ";
 
         public static void Load()
@@ -102,6 +134,24 @@ TurnipSeeds = minecraft:beetroot_seeds
             try
             {
                 if (!File.Exists(_path)) File.WriteAllText(_path, Defaults);
+                else if (!File.ReadAllText(_path).Contains(BuildingMaterialsMarker))
+                {
+                    // An older table: add the building materials once, without touching the user's lines
+                    // (any already listed keep theirs: a later line for the same item would win, so skip those).
+                    var have = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var l in File.ReadAllLines(_path))
+                    {
+                        int e = l.IndexOf('=');
+                        if (e > 0 && !l.TrimStart().StartsWith("#")) have.Add(l.Substring(0, e).Trim());
+                    }
+                    var add = new StringBuilder(Environment.NewLine + BuildingMaterialsMarker + Environment.NewLine);
+                    foreach (var l in BuildingMaterials.Split('\n'))
+                    {
+                        int e = l.IndexOf('=');
+                        if (e > 0 && !have.Contains(l.Substring(0, e).Trim())) add.Append(l.Trim()).Append(Environment.NewLine);
+                    }
+                    File.AppendAllText(_path, add.ToString());
+                }
                 _map.Clear();
                 foreach (var raw in File.ReadAllLines(_path))
                 {
@@ -158,7 +208,21 @@ TurnipSeeds = minecraft:beetroot_seeds
             return true;
         }
 
-        // kInGive {code 0, a = count, b = id length} then ceil(len / 12) kInGiveData events with
+        // A Valheim material's Minecraft counterpart (for building costs, the loot table in reverse).
+        public static bool TryMap(string prefab, out string id, out float per)
+        {
+            if (prefab != null && _map.TryGetValue(prefab, out var t)) { id = t.id; per = t.per; return true; }
+            id = null; per = 0f;
+            return false;
+        }
+
+        // Take Minecraft items (Valheim building spent them): a give with a negative count.
+        public static void Take(string id, int count)
+        {
+            if (count > 0) Give(id, -count);
+        }
+
+        // kInGive {code 0, a = count (negative: take), b = id length} then ceil(len / 12) kInGiveData events with
         // 12 bytes of the UTF-8 id each in a, b, c.
         static void Give(string id, int count)
         {

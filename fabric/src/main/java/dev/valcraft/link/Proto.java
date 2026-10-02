@@ -40,7 +40,8 @@ public final class Proto {
 	// Input types added in v5
 	public static final int IN_HURT = 7;
 	public static final int IN_OPEN_MENU = 8;
-	// ValCraft loot bridge: a = count, b = item id length (UTF-8); IN_GIVE_DATA events follow with 12 id bytes each in a, b, c
+	// ValCraft loot bridge: a = count (negative: take that many, for Valheim building costs), b = item id length (UTF-8);
+	// IN_GIVE_DATA events follow with 12 id bytes each in a, b, c
 	public static final int IN_GIVE = 9;
 	public static final int IN_GIVE_DATA = 10;
 	public static final int HURT_MELEE = 0;
@@ -130,6 +131,10 @@ public final class Proto {
 	// ValCraft: the first-person hands and held items, in Minecraft view space (camera at the origin
 	// looking down -Z), drawn by Valheim in its scene. RenAvatar layout; 0 batches = none this frame.
 	public static final int REN_VIEWMODEL = 11;
+	/** ValCraft: the player's inventory (int entries, then per entry: int count, int id length, UTF-8 id), for Valheim building costs. */
+	public static final int REN_INVENTORY = 12;
+	/** ValCraft: every item's icon in the atlas (int entries, then per entry: int id length, UTF-8 id, u0 v0 u1 v1), for Valheim's build menu. */
+	public static final int REN_ITEM_ICONS = 13;
 	public static final int PART_HEAD = 1, PART_BODY = 2, PART_RIGHT_ARM = 3, PART_LEFT_ARM = 4, PART_RIGHT_LEG = 5, PART_LEFT_LEG = 6;
 	public static final int LIGHT_STEADY = 0, LIGHT_FLAME = 1, LIGHT_LAVA = 2;
 	public static final int REN_VERTEX_BYTES = 32;
@@ -163,6 +168,8 @@ public final class Proto {
 	public static final int VAL_BLOCK_TERRAIN = 1 << 3; // ValCraft: block terrain on (the "-blocks" save, see TerrainGen)
 	/** ValCraft: mobs' pathfinding effort on Valheim terrain (bits 4-5): 0 balanced, 1 low, 2 high (TerrainPath). */
 	public static final int VAL_MOB_PATHING_SHIFT = 4;
+	/** Valheim's game is paused (single player with its menu open): Minecraft pauses too. */
+	public static final int VAL_PAUSED = 1 << 6;
 
 	// McState (relative to OFF_MC_STATE)
 	public static final long MS_SEQ = 0x00;
@@ -207,6 +214,10 @@ public final class Proto {
 	/** The eye is in a Minecraft water / lava block (Valheim's own sea is Valheim's to check). */
 	public static final int MC_EYE_IN_WATER = 1 << 8;
 	public static final int MC_EYE_IN_LAVA = 1 << 9;
+	/** ValCraft: a hoe / the Build Hammer in the main hand (Valheim's build modes); creative mode (they cost nothing). */
+	public static final int MC_HOLDING_HOE = 1 << 10;
+	public static final int MC_CREATIVE = 1 << 11;
+	public static final int MC_HOLDING_HAMMER = 1 << 12;
 
 	// Overlay
 	public static final long OC_STATE = 0x00;

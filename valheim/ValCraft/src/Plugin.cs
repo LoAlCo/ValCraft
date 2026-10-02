@@ -13,7 +13,7 @@ namespace ValCraft
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "loalco.valcraft";
-        public const string Version = "0.5.2";
+        public const string Version = "0.5.3";
 
         public static Plugin Instance;
         public static bool Paused;  // F7: Valheim has its own controls back
@@ -73,6 +73,7 @@ namespace ValCraft
                 long t = Prof.Start(); InputBridge.Frame(); Prof.Stop("input", t);
                 t = Prof.Start(); Puppet.Frame(Time.unscaledDeltaTime); Prof.Stop("puppet", t);
                 Underwater.Frame();
+                BuildTools.Frame();
                 t = Prof.Start(); WorldRender.Frame(Time.unscaledDeltaTime); Prof.Stop("render", t);
                 t = Prof.Start(); Combat.Frame(Time.unscaledDeltaTime); Prof.Stop("combat", t);
                 t = Prof.Start(); Overlay.Upload(); Prof.Stop("overlay", t);

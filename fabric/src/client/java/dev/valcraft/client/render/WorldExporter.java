@@ -115,6 +115,7 @@ public final class WorldExporter {
 		});
 		exportEntities(minecraft, level, partialTick);
 		AvatarExporter.frame(minecraft, atlas, partialTick);
+		InventoryExporter.frame(minecraft);
 	}
 
 	private static void resendEverything(Minecraft minecraft, ClientLevel level) {
@@ -123,6 +124,7 @@ public final class WorldExporter {
 		atlas = ValAtlas.build(minecraft);
 		ValCraft.LOG.info("ValCraft: {} animated textures (water, lava, fire, ...) will play in Valheim", atlas.animatedSprites());
 		AvatarExporter.reset();
+		InventoryExporter.reset();
 		ICONS.clear();
 		CUBE_FACES.clear();
 		boolean ao = minecraft.options.ambientOcclusion().get();
@@ -132,6 +134,7 @@ public final class WorldExporter {
 		ByteBuffer header = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putInt(atlas.width).putInt(atlas.height).flip();
 		boolean ok = ValLink.writeRender(Proto.REN_ATLAS, header, atlas.pixels.duplicate().clear());
 		ValCraft.LOG.info("ValCraft: sent {}x{} texture atlas to Valheim ({})", atlas.width, atlas.height, ok ? "ok" : "FAILED");
+		sendItemIcons(minecraft, level);
 		SENT.clear();
 		LIT.clear();
 		SOLID.clear();
@@ -396,6 +399,41 @@ public final class WorldExporter {
 				new float[] { (float) box.getXsize(), (float) box.getYsize(), (float) box.getZsize() }, atlas.crackUv(stage), 0
 			));
 		}
+	}
+
+	/**
+	 * Where every item's icon sits in the atlas (REN_ITEM_ICONS), so Valheim's build menu can show
+	 * Minecraft's items as costs. int entries, then per entry: int id length, UTF-8 id, 4 floats.
+	 */
+	private static void sendItemIcons(Minecraft minecraft, ClientLevel level) {
+		var out = new java.io.ByteArrayOutputStream();
+		int count = 0;
+		ByteBuffer entry = ByteBuffer.allocate(256).order(ByteOrder.LITTLE_ENDIAN);
+		for (Item item : net.minecraft.core.registries.BuiltInRegistries.ITEM) {
+			if (item == Items.AIR) {
+				continue;
+			}
+			float[] uv;
+			try {
+				uv = iconUv(minecraft, level, new ItemStack(item));
+			} catch (RuntimeException e) {
+				continue;
+			}
+			if (uv == null) {
+				continue;
+			}
+			byte[] id = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item).toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+			if (id.length > 200) {
+				continue;
+			}
+			entry.clear();
+			entry.putInt(id.length).put(id).putFloat(uv[0]).putFloat(uv[1]).putFloat(uv[2]).putFloat(uv[3]);
+			out.write(entry.array(), 0, entry.position());
+			count++;
+		}
+		ByteBuffer header = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(count).flip();
+		boolean ok = ValLink.writeRender(Proto.REN_ITEM_ICONS, header, ByteBuffer.wrap(out.toByteArray()));
+		ValCraft.LOG.info("ValCraft: sent {} item icons to Valheim ({})", count, ok ? "ok" : "FAILED");
 	}
 
 	/** The item's icon in the combined atlas {u0, v0, u1, v1}, or null. */

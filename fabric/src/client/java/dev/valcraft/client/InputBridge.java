@@ -102,7 +102,7 @@ public final class InputBridge {
 	/** Valheim loot picked up by the player: the matching Minecraft item into the inventory (dropped at the feet if full). */
 	private static void give(Minecraft minecraft, String id, int count) {
 		var server = minecraft.getSingleplayerServer();
-		if (minecraft.player == null || server == null || count <= 0) {
+		if (minecraft.player == null || server == null || count == 0) {
 			return;
 		}
 		var key = net.minecraft.resources.Identifier.tryParse(id);
@@ -115,6 +115,10 @@ public final class InputBridge {
 		server.execute(() -> {
 			ServerPlayer player = server.getPlayerList().getPlayer(uuid);
 			if (player == null) {
+				return;
+			}
+			if (count < 0) {
+				take(player, item.get(), -count);
 				return;
 			}
 			int left = count;
@@ -130,6 +134,26 @@ public final class InputBridge {
 			player.level().playSound(null, player.getX(), player.getY(), player.getZ(), net.minecraft.sounds.SoundEvents.ITEM_PICKUP,
 				net.minecraft.sounds.SoundSource.PLAYERS, 0.2F, 1.4F + player.getRandom().nextFloat() * 0.4F);
 		});
+	}
+
+	/** Valheim building spent materials: they come out of the Minecraft inventory (nothing in creative). */
+	private static void take(ServerPlayer player, net.minecraft.world.item.Item item, int count) {
+		if (player.getAbilities().instabuild) {
+			return;
+		}
+		int left = count;
+		for (var stack : player.getInventory().getNonEquipmentItems()) {
+			if (left <= 0) {
+				break;
+			}
+			if (stack.is(item)) {
+				int n = Math.min(left, stack.getCount());
+				stack.shrink(n);
+				left -= n;
+			}
+		}
+		player.getInventory().setChanged();
+		player.containerMenu.broadcastChanges();
 	}
 
 	/** Valheim hit the player: apply it as Minecraft damage on the integrated server (or the host's). */

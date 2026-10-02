@@ -201,6 +201,10 @@ public final class ValLink {
 		public boolean loading() {
 			return (this.flags & VAL_LOADING) != 0;
 		}
+
+		public boolean paused() {
+			return (this.flags & VAL_PAUSED) != 0;
+		}
 	}
 
 	/** Seqlock read of ValState into {@code out}. Returns false if the link is down. */

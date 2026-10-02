@@ -52,6 +52,16 @@ To use your own launcher instead, set `[Minecraft] Launcher` / `Arguments` in
 | F7 | Hand the controls back to Valheim (and again to return) |
 | F8 | Block terrain on/off: Valheim's ground as real Minecraft blocks |
 
+Holding a Minecraft hoe or the **Build Hammer** (Valheim's build mode):
+
+| Key | Does |
+|---|---|
+| Right click | Valheim's build menu |
+| Left click | Place the piece / use the hoe tool |
+| Middle click | Remove a piece (hammer) |
+| Alt + mouse wheel | Rotate the piece (the wheel alone still scrolls the hotbar) |
+| Shift | Place freely, without snapping |
+
 ### What works
 
 - **Movement:** Minecraft physics on Valheim's terrain, rocks, trees, buildings and dungeons, and swimming in Valheim's sea.
@@ -61,7 +71,10 @@ To use your own launcher instead, set `[Minecraft] Launcher` / `Arguments` in
 - **Minecraft things:** entities (burning ones on fire), particles, chests and furnaces, TNT, arrows, fishing lines, leads, dropped items, and your own Minecraft body in third person.
 - **Combat:** Minecraft weapons and arrows hit Valheim creatures, and their hits come back as Minecraft damage, with armor and shields.
 - **Minecraft mobs:** they walk Valheim's terrain (around its rocks, logs and trees), and Minecraft's monsters and iron golems hunt Valheim's hostile creatures. How hard they plan their way is `[Mobs] Pathfinding` in the config (High, Balanced, Low) for slower PCs.
-- **Tools:** axes chop trees, pickaxes mine rocks and dig terrain, with Valheim's tool tiers.
+- **Tools:** axes chop trees and pickaxes mine rocks, with Valheim's tool tiers. Shovels dig soil (dirt, grass, sand, snow); rock (steep slopes and paved ground) takes a pickaxe.
+- **Hoe:** a Minecraft hoe works like Valheim's: level ground, raise ground, paths and paved roads, from Valheim's own hoe menu. Stone costs come out of your Minecraft cobblestone.
+- **Building (experimental):** the **Build Hammer** (crafted from planks and sticks: three planks on top, planks either side of a stick, a stick below) builds with Valheim's own pieces, menu and workbench rules. The costs are Minecraft items from your inventory, shown with Minecraft's icons (Wood = oak logs, Stone = cobblestone, Surtling Core = fire charge, ...). Every piece is unlocked for now. Creative builds for free.
+- **Pausing:** pausing Valheim when you play alone pauses Minecraft too.
 - **Loot:** Valheim loot goes into the Minecraft inventory (wood becomes oak logs, stone becomes cobblestone, and so on). Edit the mapping in `BepInEx/config/ValCraft.loot.txt`.
 - **Block terrain (F8):** Valheim's ground becomes real Minecraft blocks you can mine and build into, by biome, with ores below. It uses its own Minecraft save per world; your inventory, stats and builds follow you across both (blocks you dig out of the terrain stay in block mode).
 - **Time:** Minecraft's time of day follows Valheim's.
@@ -82,12 +95,15 @@ In `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor):
 | `[Combat] Range` | How far (metres) Valheim creatures can be fought from Minecraft |
 | `[Debug] Diagnostics` | Extra logging, for bug reports |
 
+`BepInEx/config/ValCraft.loot.txt` lists which Minecraft item each Valheim item becomes. Building uses the same list in reverse for its costs.
+
 ## Known issues
 
 - Minecraft mobs sometimes spin in place for a moment when their path breaks.
 - Valheim creatures don't fight back at Minecraft mobs yet.
 - Minecraft items lying on the ground don't follow you across F8 (block terrain on/off).
-- Pausing Valheim doesn't pause Minecraft yet, even when you play alone (planned).
+- Building with the Build Hammer is experimental and not everything has been tried.
+- Not every Valheim material has a Minecraft counterpart yet (some trophies and late-game items). Pieces that need one take it from the Valheim inventory, so they may not be buildable for now. More will be added; you can add your own in `ValCraft.loot.txt`.
 - Minecraft's portals (Nether and End) don't work. They may or may not be added later.
 
 ## Layout
@@ -97,6 +113,7 @@ In `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor):
 | `valheim/ValCraft` | BepInEx plugin (C#): link, puppet, input, collision export, overlay, rendering, combat, loot, launcher |
 | `fabric/` | Fabric mod for Minecraft 26.3 (Java 25), forked from SkyCraft |
 | `protocol/valcraft_protocol.h` | Shared-memory layout, mirrored by `Link/Proto.cs` and `link/Proto.java` |
+| `tools/make_hammer_texture.py` | Draws the Build Hammer's 16x16 texture |
 | `installer/` | The optional step-by-step installer (WinForms, .NET Framework 4.8 built into Windows); `make_icon.py` draws its icon |
 | `tools/package.py` | Builds both halves, the release zips and the installer into `dist/` |
 | `tools/minecraft-bundle/` | The Prism instance and settings packed into `ValCraft-Minecraft.zip` |

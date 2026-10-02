@@ -59,6 +59,8 @@ namespace valcraft::proto
 		kValInGame = 1u << 0,    // a save is loaded and the player exists
 		kValMenuOpen = 1u << 1,  // a Valheim menu owns input; MC should drop held keys
 		kValLoading = 1u << 2,   // loading screen / cell transition in progress
+		// ValCraft: bit 3 block terrain, bits 4-5 mob pathfinding (see Proto.cs / Proto.java)
+		kValPaused = 1u << 6,    // Valheim's game is paused (single player, menu open): pause MC too
 	};
 
 	// Valheim's water (lakes, rivers, the sea) around the player, for Minecraft to treat as its own
@@ -100,6 +102,11 @@ namespace valcraft::proto
 		kMcDead = 1u << 5,
 		kMcSwimming = 1u << 6,
 		kMcFlying = 1u << 7,
+		kMcEyeInWater = 1u << 8,  // ValCraft: the eye is in a Minecraft water / lava block
+		kMcEyeInLava = 1u << 9,
+		kMcHoldingHoe = 1u << 10, // ValCraft: a hoe / the Valheim Hammer in the main hand (Valheim build modes)
+		kMcCreative = 1u << 11,   // creative mode: building costs nothing
+		kMcHoldingHammer = 1u << 12,
 	};
 
 	struct McState
@@ -180,7 +187,7 @@ namespace valcraft::proto
 		kInReleaseAll = 6,   // release every held key/button (input focus left MC)
 		kInHurt = 7,         // Valheim hit the player: code = HurtKind, a = Valheim damage * 100, b = attacker FormID, c = HurtFlags
 		kInOpenMenu = 8,     // open Minecraft's pause/options menu
-		kInGive = 9,         // ValCraft loot bridge: a = count, b = item id length (UTF-8); kInGiveData events follow
+		kInGive = 9,         // ValCraft loot bridge: a = count (negative: take, for building costs), b = item id length (UTF-8); kInGiveData events follow
 		kInGiveData = 10,    // the next 12 bytes of the item id in a, b, c (little-endian)
 	};
 
@@ -360,6 +367,11 @@ namespace valcraft::proto
 		                      // relative to the feet and facing +Z, split into its parts (RenBatch
 		                      // flags bits 8-11: RagdollPart). Sent about once a second while alive;
 		                      // Valheim hangs the parts on its ragdoll when the player dies.
+		kRenViewModel = 11,   // the first-person hands and held items (see AvatarExporter)
+		kRenInventory = 12,   // ValCraft: int entries, then per entry int count, int id length, UTF-8 id:
+		                      // what the player carries, for Valheim building costs (BuildTools)
+		kRenItemIcons = 13,   // ValCraft: int entries, then per entry int id length, UTF-8 id, float u0 v0 u1 v1:
+		                      // every item's icon in the atlas, for the build menu's costs
 	};
 
 	struct RenSolids

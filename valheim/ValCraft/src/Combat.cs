@@ -197,6 +197,7 @@ namespace ValCraft
         {
             uint kind = tool & 0xF;
             int tier = (int)((tool >> 4) & 0xF);
+            if (BuildTools.Active) return;  // Valheim's build mode (hoe, hammer) has the click
             var point = Coords.ToValheim(atMc);
             int n = Physics.OverlapSphereNonAlloc(point, 0.3f, _probe, ~0, QueryTriggerInteraction.Ignore);
             IDestructible target = null;
@@ -234,8 +235,44 @@ namespace ValCraft
                 target.Damage(hit);
                 return;
             }
-            if (terrain && (kind == ToolPickaxe || kind == ToolShovel) && power > 0.5f) Dig(player, point);
+            DigTerrain(player, kind, point, terrain);
         }
+
+        static int _terrainMask = -1;
+        static float _toolHintAt;
+
+        // Valheim's ground: a shovel digs soil (dirt, grass, sand, snow), and rock (the steep slopes
+        // Valheim draws as cliff, and paved ground) takes a pickaxe. The ground is found with a ray
+        // from the eye through the hit, so a hit point slightly off Valheim's real terrain still counts.
+        static void DigTerrain(Player player, uint kind, Vector3 point, bool terrainNear)
+        {
+            if (_terrainMask < 0) _terrainMask = LayerMask.GetMask("terrain");
+            Vector3 eye = GameCamera.instance ? GameCamera.instance.transform.position : player.GetEyePoint();
+            Vector3 to = point - eye;
+            Vector3 normal = Vector3.up;
+            bool found = false;
+            if (to.sqrMagnitude > 1e-4f && Physics.Raycast(eye, to.normalized, out var rh, to.magnitude + 1f, _terrainMask, QueryTriggerInteraction.Ignore)
+                && rh.collider.GetComponentInParent<Heightmap>())
+            {
+                point = rh.point;
+                normal = rh.normal;
+                found = true;
+            }
+            if (!found && !terrainNear) return;
+            var hm = Heightmap.FindHeightmap(point);
+            bool paved = hm && hm.GetPaintMask(point).b > 0.5f;
+            bool rock = normal.y < RockSlope || paved;
+            uint needed = rock ? ToolPickaxe : ToolShovel;
+            if (kind == needed) { Dig(player, point); return; }
+            if ((kind == ToolPickaxe || kind == ToolShovel) && Time.unscaledTime > _toolHintAt)
+            {
+                _toolHintAt = Time.unscaledTime + 3f;
+                if (MessageHud.instance) MessageHud.instance.ShowMessage(MessageHud.MessageType.Center, rock ? "This is rock: dig it with a pickaxe" : "This is soil: dig it with a shovel");
+            }
+        }
+
+        // Valheim's terrain shows cliff rock where it's steeper than about 40 degrees.
+        const float RockSlope = 0.76f;
 
         static void Dig(Player player, Vector3 point)
         {

@@ -119,12 +119,22 @@ namespace ValCraft
                 Button(mouse.backButton, 4);
                 Button(mouse.forwardButton, 5);
                 float scroll = mouse.scroll.ReadValue().y;
-                if (scroll != 0f)
+                if (scroll != 0f && !BuildRotate)
                 {
                     // Windows reports 120 per notch; some setups normalise it to 1.
                     int amount = Mathf.Abs(scroll) >= 30f ? Mathf.RoundToInt(scroll) : Mathf.RoundToInt(Mathf.Sign(scroll) * 120f);
                     Shm.PushInput(Proto.InScroll, 0, amount);
                 }
+            }
+        }
+
+        // Alt + mouse wheel with a build tool out rotates Valheim's piece instead of scrolling the hotbar.
+        public static bool BuildRotate
+        {
+            get
+            {
+                var kb = UnityEngine.InputSystem.Keyboard.current;
+                return BuildTools.Active && kb != null && (kb.leftAltKey.isPressed || kb.rightAltKey.isPressed);
             }
         }
 
