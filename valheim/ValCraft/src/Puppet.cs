@@ -385,7 +385,8 @@ namespace ValCraft
         {
             return Hud.InRadial() || InventoryGui.IsVisible() || TextInput.IsVisible() || Menu.IsActive() || Minimap.IsOpen() ||
                    StoreGui.IsVisible() || Hud.IsPieceSelectionVisible() || UnifiedPopup.IsVisible() || global::Console.IsVisible() ||
-                   (Chat.instance && Chat.instance.HasFocus()) || (TextViewer.instance && TextViewer.instance.IsVisible());
+                   (Chat.instance && Chat.instance.HasFocus()) || (TextViewer.instance && TextViewer.instance.IsVisible()) ||
+                   ConfigManagerCompat.WindowOpen;
         }
 
         // ---- tick interpolation ---------------------------------------------------------------

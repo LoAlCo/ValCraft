@@ -11,14 +11,93 @@ namespace ValCraft
     // Valheim's window has focus. While Minecraft drives the player, keyboard and mouse go to
     // Minecraft (through the input ring) and Valheim's own controls see nothing (Patches: ZInput),
     // except a few keys Valheim keeps: Esc (its menu), M (map), G (use: doors, chests, portals,
-    // beds, traders) and F7 (hand the controls back to Valheim).
+    // beds, traders) and F7 (hand the controls back to Valheim). All but Esc can be changed in the
+    // config ([Controls]); Minecraft's own keys are changed in Minecraft's options (O, then Controls).
     public static class InputBridge
     {
-        public const Key UseKey = Key.G;
-        public const Key MapKey = Key.M;
-        public const Key ToggleKey = Key.F7;
-        public const Key TerrainKey = Key.F8;  // block terrain on/off
-        public const Key OptionsKey = Key.O;  // Minecraft's pause/options screen (Esc is Valheim's)
+        public static Key UseKey => _use.Key;
+        public static Key MapKey => _map.Key;
+        public static Key ToggleKey => _toggle.Key;
+        public static Key TerrainKey => _terrain.Key;   // block terrain on/off
+        public static Key OptionsKey => _options.Key;   // Minecraft's pause/options screen (Esc is Valheim's)
+        public static Key RotateKey => _rotate.Key;     // held with the mouse wheel: rotate a build piece (either Alt by default)
+
+        static KeySetting _use = new KeySetting(Key.G), _map = new KeySetting(Key.M), _toggle = new KeySetting(Key.F7),
+            _terrain = new KeySetting(Key.F8), _options = new KeySetting(Key.O), _rotate = new KeySetting(Key.LeftAlt);
+
+        // A [Controls] key: a KeyCode setting (mod managers' config editors and ConfigurationManager
+        // show a key picker for those), used as the input system's Key. Changes apply right away.
+        sealed class KeySetting
+        {
+            readonly Key _fallback;
+            public Key Key;
+            public KeySetting(Key fallback) { _fallback = Key = fallback; }
+
+            public KeySetting Bind(BepInEx.Configuration.ConfigFile config, string name, KeyCode fallback, string description)
+            {
+                var entry = config.Bind("Controls", name, fallback, description);
+                void Apply()
+                {
+                    var key = FromKeyCode(entry.Value);
+                    if (key == Key.None)
+                    {
+                        Plugin.Warn($"[Controls] {name}: {entry.Value} can't be used (a keyboard key is needed), using {_fallback}");
+                        key = _fallback;
+                    }
+                    Key = key;
+                }
+                Apply();
+                entry.SettingChanged += (_, __) => { Apply(); Plugin.Log($"[Controls] {name} is now {Key}"); };
+                return this;
+            }
+        }
+
+        public static void Init(BepInEx.Configuration.ConfigFile config)
+        {
+            const string note = " Valheim keeps this key while Minecraft drives, so Minecraft won't get it: pick one Minecraft doesn't use. Changes apply right away.";
+            _toggle.Bind(config, "ValheimControls", KeyCode.F7, "Hand the controls back to Valheim (and again to return to Minecraft)." + note);
+            _terrain.Bind(config, "BlockTerrain", KeyCode.F8, "Block terrain on/off (Valheim's ground as Minecraft blocks)." + note);
+            _use.Bind(config, "Use", KeyCode.G, "Valheim's \"use\": doors, chests, portals, beds, traders." + note);
+            _options.Bind(config, "MinecraftOptions", KeyCode.O, "Minecraft's options menu (where Minecraft's own keys are changed, under Controls)." + note);
+            _map.Bind(config, "Map", KeyCode.M, "Valheim's map. Set it to the same key as Valheim's own map key (Valheim's settings), so Minecraft doesn't get that key too." + note);
+            _rotate.Bind(config, "BuildRotate", KeyCode.LeftAlt, "Held with the mouse wheel to rotate a Valheim build piece (hoe, Build Hammer). Either Alt, Ctrl or Shift counts." + note);
+        }
+
+        // Unity's old KeyCode (what config editors offer) to the input system's Key. None for mouse buttons and the like.
+        public static Key FromKeyCode(KeyCode code)
+        {
+            if (code >= KeyCode.Alpha0 && code <= KeyCode.Alpha9) return Key.Digit0 + (code - KeyCode.Alpha0);
+            if (code >= KeyCode.Keypad0 && code <= KeyCode.Keypad9) return Key.Numpad0 + (code - KeyCode.Keypad0);
+            switch (code)
+            {
+                case KeyCode.None: return Key.None;
+                case KeyCode.Return: return Key.Enter;
+                case KeyCode.KeypadEnter: return Key.NumpadEnter;
+                case KeyCode.KeypadPlus: return Key.NumpadPlus;
+                case KeyCode.KeypadMinus: return Key.NumpadMinus;
+                case KeyCode.KeypadMultiply: return Key.NumpadMultiply;
+                case KeyCode.KeypadDivide: return Key.NumpadDivide;
+                case KeyCode.KeypadPeriod: return Key.NumpadPeriod;
+                case KeyCode.KeypadEquals: return Key.NumpadEquals;
+                case KeyCode.BackQuote: return Key.Backquote;
+                case KeyCode.LeftControl: return Key.LeftCtrl;
+                case KeyCode.RightControl: return Key.RightCtrl;
+                case KeyCode.LeftWindows: case KeyCode.LeftCommand: return Key.LeftMeta;
+                case KeyCode.RightWindows: case KeyCode.RightCommand: return Key.RightMeta;
+                case KeyCode.Numlock: return Key.NumLock;
+                case KeyCode.Print: return Key.PrintScreen;
+                case KeyCode.Menu: return Key.ContextMenu;
+            }
+            return System.Enum.TryParse(code.ToString(), out Key key) ? key : Key.None;
+        }
+
+        static bool RotateHeld(Keyboard kb)
+        {
+            if (RotateKey == Key.LeftAlt || RotateKey == Key.RightAlt) return kb.leftAltKey.isPressed || kb.rightAltKey.isPressed;
+            if (RotateKey == Key.LeftCtrl || RotateKey == Key.RightCtrl) return kb.leftCtrlKey.isPressed || kb.rightCtrlKey.isPressed;
+            if (RotateKey == Key.LeftShift || RotateKey == Key.RightShift) return kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed;
+            return kb[RotateKey].isPressed;
+        }
 
         static float _lookDx, _lookDy;
         static readonly bool[] _down = new bool[512];
@@ -61,7 +140,7 @@ namespace ValCraft
             {
                 Plugin.Paused = !Plugin.Paused;
                 ReleaseAll();
-                Plugin.Message(Plugin.Paused ? "ValCraft: Valheim controls (F7 for Minecraft)" : "ValCraft: Minecraft controls");
+                Plugin.Message(Plugin.Paused ? $"ValCraft: Valheim controls ({ToggleKey} for Minecraft)" : "ValCraft: Minecraft controls");
             }
 
             if (kb != null && kb[TerrainKey].wasPressedThisFrame && Player.m_localPlayer && !Puppet.McScreenOpen) BlockTerrain.Toggle();
@@ -75,12 +154,14 @@ namespace ValCraft
 
             if (kb != null)
             {
+                Key configManagerKey = ConfigManagerCompat.Hotkey;
                 foreach (var key in kb.allKeys)
                 {
                     if (key == null) continue;
                     bool pressed = key.wasPressedThisFrame, released = key.wasReleasedThisFrame;
                     if (!pressed && !released) continue;
                     var k = key.keyCode;
+                    if (k == configManagerKey && configManagerKey != Key.None) continue;  // ConfigurationManager's window key
                     if (!Puppet.McScreenOpen)
                     {
                         // Keys Valheim keeps while no Minecraft screen is open.
@@ -134,7 +215,7 @@ namespace ValCraft
             get
             {
                 var kb = UnityEngine.InputSystem.Keyboard.current;
-                return BuildTools.Active && kb != null && (kb.leftAltKey.isPressed || kb.rightAltKey.isPressed);
+                return BuildTools.Active && kb != null && RotateHeld(kb);
             }
         }
 
@@ -155,7 +236,7 @@ namespace ValCraft
             var player = Player.m_localPlayer;
             if (!player) return;
             var target = player.GetHoverObject();
-            if (!target) { Plugin.Log("G: nothing to use under the crosshair"); return; }
+            if (!target) { Plugin.Log($"{UseKey}: nothing to use under the crosshair"); return; }
             _interact ??= AccessTools.Method(typeof(Player), "Interact", new[] { typeof(GameObject), typeof(bool), typeof(bool) });
             _interact?.Invoke(player, new object[] { target, false, false });
             Plugin.Log("used " + target.name);

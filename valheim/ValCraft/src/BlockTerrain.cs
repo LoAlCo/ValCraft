@@ -32,7 +32,7 @@ namespace ValCraft
         public static void Init(ConfigFile config)
         {
             Enabled = config.Bind("Terrain", "BlockTerrain", false,
-                "Valheim's ground as real Minecraft blocks (mine it, build into it). Toggle in game with F8. Uses its own Minecraft save, so builds in normal mode are kept apart.");
+                "Valheim's ground as real Minecraft blocks (mine it, build into it). Toggle in game with F8 ([Controls] BlockTerrain). Uses its own Minecraft save, so builds in normal mode are kept apart.");
             Radius = config.Bind("Terrain", "Radius", 80, "How far around you (metres) Valheim's ground is turned into blocks.");
         }
 

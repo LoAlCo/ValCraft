@@ -52,6 +52,18 @@ To use your own launcher instead, set `[Minecraft] Launcher` / `Arguments` in
 | F7 | Hand the controls back to Valheim (and again to return) |
 | F8 | Block terrain on/off: Valheim's ground as real Minecraft blocks |
 
+**Changing keys:** Minecraft's own keys (movement, inventory, hotbar, ...) are changed in Minecraft's
+options: press O, then Controls. ValCraft's keys above (F7, F8, G, O, M, and Alt for rotating) are in
+`[Controls]` of `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor), as
+Unity key names such as `F7`, `G` or `LeftAlt`. Changes apply right away, without restarting.
+
+**Optional:** [ConfigurationManager](https://thunderstore.io/c/valheim/p/shudnal/ConfigurationManager/)
+isn't needed, but it's handy for changing ValCraft's settings (keys included, with a key picker)
+mid-game with F1 instead of through your mod manager. ValCraft works with it: its window keeps the
+keyboard and mouse away from Minecraft while it's open, and F1 doesn't also hide Minecraft's HUD.
+Valheim keeps those keys, so pick ones Minecraft doesn't use; if you change Valheim's map key in
+Valheim's settings, set `Map` to the same key.
+
 Holding a Minecraft hoe or the **Build Hammer** (Valheim's build mode):
 
 | Key | Does |
@@ -83,7 +95,7 @@ Holding a Minecraft hoe or the **Build Hammer** (Valheim's build mode):
 
 ### Settings
 
-In `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor):
+In `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor, or in game with the optional ConfigurationManager, see Controls):
 
 | Setting | Does |
 |---|---|
@@ -93,6 +105,7 @@ In `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor):
 | `[Mobs] Pathfinding` | `High`, `Balanced` or `Low`: how hard Minecraft's mobs work out their way (Low for slower PCs) |
 | `[Combat] DamageScale` | Minecraft damage times this is the damage Valheim creatures take |
 | `[Combat] Range` | How far (metres) Valheim creatures can be fought from Minecraft |
+| `[Controls] ValheimControls`, `BlockTerrain`, `Use`, `MinecraftOptions`, `Map`, `BuildRotate` | ValCraft's own keys (F7, F8, G, O, M, Alt); see Controls |
 | `[Debug] Diagnostics` | Extra logging, for bug reports |
 
 `BepInEx/config/ValCraft.loot.txt` lists which Minecraft item each Valheim item becomes. Building uses the same list in reverse for its costs.

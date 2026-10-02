@@ -13,7 +13,7 @@ namespace ValCraft
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "loalco.valcraft";
-        public const string Version = "0.5.3";
+        public const string Version = "0.5.4";
 
         public static Plugin Instance;
         public static bool Paused;  // F7: Valheim has its own controls back
@@ -37,6 +37,7 @@ namespace ValCraft
                 Logger.LogError("ValCraft disabled: could not create shared memory");
                 return;
             }
+            InputBridge.Init(Config);
             Combat.Init(Config);
             Launcher.Init(Config);
             BlockTerrain.Init(Config);

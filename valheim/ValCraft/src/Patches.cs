@@ -256,7 +256,7 @@ namespace ValCraft
     [HarmonyPatch(typeof(Hud), "UpdateCrosshair")]
     static class HoverPromptPatch
     {
-        static readonly string Key = InputBridge.UseKey.ToString();
+        static string Key => InputBridge.UseKey.ToString();
 
         static void Postfix(Hud __instance)
         {
