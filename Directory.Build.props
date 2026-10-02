@@ -1,0 +1,11 @@
+<Project>
+  <!-- Every .NET project here (the Valheim plugin, the installer). Release builds carry no path
+       from the machine that built them: no debug info (which records the build folder), and any
+       source path the compiler would embed is mapped to a neutral one. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <Deterministic>true</Deterministic>
+    <PathMap>$(MSBuildProjectDirectory)=/_/</PathMap>
+  </PropertyGroup>
+</Project>
