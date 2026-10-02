@@ -27,6 +27,7 @@ namespace ValCraft
         static readonly Dictionary<long, List<Emitter>> _emitters = new Dictionary<long, List<Emitter>>();
         static readonly Dictionary<uint, int> _counts = new Dictionary<uint, int>();
         static float _logTimer = 10f;
+        static float _nextShaderLook;
         static int _pieceLayer = -1;
         static readonly List<Light> _lights = new List<Light>();
         static readonly List<Section> _pendingMaterials = new List<Section>();
@@ -83,6 +84,14 @@ namespace ValCraft
             long at = Prof.Start();
             if (_atlasDirty && _atlas) { _atlas.Apply(false, false); _atlasDirty = false; }
             Prof.Stop("render/atlasapply", at);
+            // The shader is looked up once in the world, not only when block sections wait for it: the
+            // first-person hands (and entities) use the same materials, and with no Minecraft blocks
+            // near the player nothing else would ever look it up. The search is slow: once a second.
+            if (!BlockMaterials.Ready && Player.m_localPlayer && Time.unscaledTime >= _nextShaderLook)
+            {
+                _nextShaderLook = Time.unscaledTime + 1f;
+                BlockMaterials.FindShader();
+            }
             if (_pendingMaterials.Count > 0 && Player.m_localPlayer && BlockMaterials.FindShader() && _atlas)
             {
                 foreach (var s in _pendingMaterials) AssignMaterials(s);

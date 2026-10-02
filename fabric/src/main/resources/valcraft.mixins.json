@@ -28,7 +28,11 @@
     "ServerExplosionMixin",
     "ServerPlayerMixin",
     "SmithingMixin",
-    "WalkNodeFloorValheimMixin"
+    "WalkNodeFloorValheimMixin",
+    "AbstractBoatValheimMixin",
+    "BoatItemValheimMixin"
   ],
-  "injectors": { "defaultRequire": 1 }
+  "injectors": {
+    "defaultRequire": 1
+  }
 }

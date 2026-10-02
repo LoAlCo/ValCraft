@@ -94,24 +94,59 @@ Dandelion = minecraft:dandelion
 Thistle = minecraft:blue_orchid
 CarrotSeeds = minecraft:wheat_seeds
 TurnipSeeds = minecraft:beetroot_seeds
-" + BuildingMaterials + BossItems;
+" + BuildingMaterials + BossItems + BossDrops;
 
         // Added in 0.5.5: boss summoning items and keys, so they show up in Minecraft's inventory and
         // the use key can offer them at altars, item stands and doors (Offerings).
         const string BossItemsMarker = "# boss offerings and keys (ValCraft 0.5.5)";
         const string BossItems = BossItemsMarker + @"
 TrophyDeer = valcraft:deer_trophy
-AncientSeed = minecraft:pitcher_pod
-WitheredBone = minecraft:skeleton_skull
-DragonEgg = minecraft:sniffer_egg
+AncientSeed = valcraft:ancient_seed
+WitheredBone = valcraft:withered_bone
+DragonEgg = valcraft:dragon_egg
 GoblinTotem = valcraft:fuling_totem
-CryptKey = minecraft:trial_key
-Sealbreaker = minecraft:ominous_trial_key
-Bell = minecraft:bell
+CryptKey = valcraft:swamp_key
+DvergrKey = valcraft:sealbreaker
+Bell = valcraft:bell
 ";
 
+        // Added in 0.5.6: what the bosses drop, as ValCraft items (redrawn from Valheim's icons).
+        const string BossDropsMarker = "# boss drops (ValCraft 0.5.6)";
+        const string BossDrops = BossDropsMarker + @"
+BellFragment = valcraft:bell_fragment
+DvergrKeyFragment = valcraft:sealbreaker_fragment
+HardAntler = valcraft:hard_antler
+Wishbone = valcraft:wishbone
+DragonTear = valcraft:dragon_tear
+YagluthDrop = valcraft:torn_spirit
+QueenDrop = valcraft:majestic_carapace
+FaderDrop = valcraft:kindled_ribs
+TrophyEikthyr = valcraft:eikthyr_trophy
+TrophyTheElder = valcraft:elder_trophy
+TrophyBonemass = valcraft:bonemass_trophy
+TrophyDragonQueen = valcraft:moder_trophy
+TrophyGoblinKing = valcraft:yagluth_trophy
+TrophySeekerQueen = valcraft:queen_trophy
+TrophyFader = valcraft:fader_trophy
+";
+
+        // Old default lines (still unchanged by the user) that now point at ValCraft's own items.
+        static readonly (string from, string to)[] Replaced =
+        {
+            ("TrophyDeer = minecraft:goat_horn", "TrophyDeer = valcraft:deer_trophy"),
+            ("GoblinTotem = minecraft:totem_of_undying", "GoblinTotem = valcraft:fuling_totem"),
+            ("AncientSeed = minecraft:pitcher_pod", "AncientSeed = valcraft:ancient_seed"),
+            ("WitheredBone = minecraft:skeleton_skull", "WitheredBone = valcraft:withered_bone"),
+            ("DragonEgg = minecraft:sniffer_egg", "DragonEgg = valcraft:dragon_egg"),
+            ("CryptKey = minecraft:trial_key", "CryptKey = valcraft:swamp_key"),
+            ("Bell = minecraft:bell", "Bell = valcraft:bell"),
+            ("DragonTear = minecraft:ghast_tear", "DragonTear = valcraft:dragon_tear"),
+            // 0.5.5 named the Queen's key by its display name; its prefab is DvergrKey
+            ("Sealbreaker = minecraft:ominous_trial_key", "DvergrKey = valcraft:sealbreaker"),
+        };
+
         // Blocks added to the loot table over time: appended once to older tables (see Load).
-        static readonly (string marker, string lines)[] Additions = { (BuildingMaterialsMarker, BuildingMaterials), (BossItemsMarker, BossItems) };
+        static readonly (string marker, string lines)[] Additions = { (BuildingMaterialsMarker, BuildingMaterials), (BossItemsMarker, BossItems), (BossDropsMarker, BossDrops) };
 
         // Added in 0.5.3 for Valheim building (the Build Hammer): its costs are paid in these, and
         // picking them up in Valheim gives them. Appended once to older loot tables (see Load).
@@ -125,7 +160,6 @@ IronNails = minecraft:iron_nugget
 Tar = minecraft:ink_sac
 Chain = minecraft:iron_chain
 Thunderstone = minecraft:lightning_rod
-DragonTear = minecraft:ghast_tear
 SerpentScale = minecraft:turtle_scute
 Needle = minecraft:pointed_dripstone
 Eitr = minecraft:lapis_lazuli
@@ -163,8 +197,8 @@ AskHide = minecraft:rabbit_hide
                         if (e > 0 && !l.TrimStart().StartsWith("#")) have.Add(l.Substring(0, e).Trim());
                     }
                     // Defaults that changed before release: rewrite the old line if it's still the old default.
-                    string updated = text.Replace("TrophyDeer = minecraft:goat_horn", "TrophyDeer = valcraft:deer_trophy")
-                                         .Replace("GoblinTotem = minecraft:totem_of_undying", "GoblinTotem = valcraft:fuling_totem");
+                    string updated = text;
+                    foreach (var (from, to) in Replaced) updated = updated.Replace(from, to);
                     if (updated != text) { File.WriteAllText(_path, updated); text = updated; }
                     foreach (var (marker, lines) in Additions)
                     {

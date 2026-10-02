@@ -75,6 +75,7 @@ namespace ValCraft.Render
         public static MeshRenderer ViewModelRenderer => _viewModel != null && _viewModel.renderer && _viewModel.renderer.enabled ? _viewModel.renderer : null;
         static readonly Dictionary<Material, Material> _late = new Dictionary<Material, Material>();
         static readonly HashSet<Material> _lateSet = new HashSet<Material>();
+        static bool _wasUsable;
 
         public static void RefreshViewModel()
         {
@@ -86,8 +87,20 @@ namespace ValCraft.Render
             if (_viewModel == null || !_viewModel.renderer) return;
             bool late = !HandOcclusion.Usable;
             _viewModel.renderer.receiveShadows = !late;
-            if (!late) return;
             var mats = _viewModel.renderer.sharedMaterials;
+            if (!late)
+            {
+                // Back to the normal materials once the hands can be drawn in the G-buffer (at startup
+                // that can come a moment after the first hands arrive; left on the late copies they
+                // stay invisible until the next full resend).
+                bool changed = false;
+                for (int i = 0; i < mats.Length; i++)
+                    if (mats[i] && _lateSet.Contains(mats[i]))
+                        foreach (var kv in _late)
+                            if (kv.Value == mats[i]) { mats[i] = kv.Key; changed = true; break; }
+                if (changed) _viewModel.renderer.sharedMaterials = mats;
+                return;
+            }
             for (int i = 0; i < mats.Length; i++)
             {
                 if (!mats[i] || _lateSet.Contains(mats[i])) continue;  // already swapped (an unchanged frame)
@@ -132,6 +145,10 @@ namespace ValCraft.Render
         public static void Frame()
         {
             if (_viewModel != null && _viewModel.go && (!Puppet.Puppeting || Puppet.Mc.cameraMode != 0)) _viewModel.renderer.enabled = false;
+            // The hands' draw mode follows HandOcclusion becoming usable, even while no new hands arrive.
+            bool usable = HandOcclusion.Usable;
+            if (usable != _wasUsable) { _wasUsable = usable; ApplyViewModelMode(); }
+            if (Plugin.Diagnostics.Value && Time.unscaledTime > _nextHandsLog) { _nextHandsLog = Time.unscaledTime + 5f; LogHands(); }
             if (_avatar == null || !_avatar.go) return;
             if (!Puppet.Puppeting || Puppet.Mc.cameraMode == 0) { _avatar.renderer.enabled = false; return; }
             var f = Coords.ToMc(Puppet.FeetPos);
@@ -183,6 +200,24 @@ namespace ValCraft.Render
             for (uint i = 0; i < words; i++) { h ^= q[i]; h *= 1099511628211ul; }
             for (uint i = words * 8; i < bytes; i++) { h ^= p[i]; h *= 1099511628211ul; }
             return h ^ bytes;
+        }
+
+        static float _nextHandsLog;
+
+        // Diagnostics: everything that decides whether the first-person hands show.
+        static void LogHands()
+        {
+            if (_viewModel == null || !_viewModel.go) { Plugin.Log("hands: none yet"); return; }
+            var r = _viewModel.renderer;
+            var cam = r ? r.GetComponentInParent<Camera>() : null;
+            var sb = new System.Text.StringBuilder();
+            foreach (var m in r.sharedMaterials)
+                sb.Append(m ? $"{m.name}[{(m.shader ? m.shader.name : "no shader")} q{m.renderQueue} tex {(m.mainTexture ? m.mainTexture.name : "none")}] " : "null ");
+            Plugin.Log($"hands: active {_viewModel.go.activeInHierarchy} enabled {r.enabled} visible {r.isVisible} layer {_viewModel.go.layer} " +
+                       $"verts {_viewModel.mesh.vertexCount} bounds {_viewModel.mesh.bounds.size} parent {_viewModel.go.transform.parent?.name} " +
+                       $"cam {(cam ? cam.name + (cam.enabled ? "" : " (off)") + $" mask {cam.cullingMask:X} main {cam == Camera.main}" : "none")} " +
+                       $"gamecam {(GameCamera.instance ? GameCamera.instance.name : "none")} same {(GameCamera.instance && cam && GameCamera.instance.gameObject == cam.gameObject)} " +
+                       $"usable {HandOcclusion.Usable} puppet {Puppet.Puppeting} cammode {Puppet.Mc.cameraMode} ready {BlockMaterials.Ready} mats {sb}");
         }
 
         static Part NewPart(Transform root, string name)

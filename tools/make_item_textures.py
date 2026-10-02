@@ -1,5 +1,7 @@
 """Draws ValCraft's 16x16 Minecraft-style item textures for Valheim items (original pixel art):
-the deer trophy (Eikthyr's offering) and the fuling totem (Yagluth's offering).
+the deer trophy (Eikthyr's offering), the fuling totem (Yagluth's offering) and the wishbone
+(Bonemass' drop), each redrawn from Valheim's own icon. The other boss items come from
+pixelize_icons.py.
 
   python tools/make_item_textures.py
 """
@@ -113,12 +115,41 @@ TOTEM_ROWS = [  # left half, mirrored
 ]
 
 
+# ---- wishbone: a forked bone, one arm out to the left and one up to the right, glowing at the tips --
+
+WISH = {
+    "b": (214, 190, 140),  # bone
+    "B": (164, 136, 90),   # bone shade
+    "g": (110, 220, 196),  # Valheim's teal glow
+}
+WISH_ROWS = [
+    "................",
+    "............gg..",
+    "...........gbB..",
+    "...........bB...",
+    "..........bB....",
+    "..........bB....",
+    ".........bB.....",
+    ".........bB.....",
+    "........bB......",
+    ".gb.....bB......",
+    "..bbB..bB.......",
+    "....bbbbB.......",
+    "......bB........",
+    "................",
+    "................",
+    "................",
+]
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     deer = outline(from_rows(DEER_ROWS, DEER, mirror=True), (40, 26, 16))
     png(os.path.join(OUT, "deer_trophy.png"), deer)
     totem = outline(from_rows(TOTEM_ROWS, TOTEM, mirror=True), (52, 38, 24), skip=(TOTEM["q"],))
     png(os.path.join(OUT, "fuling_totem.png"), totem)
+    wish = outline(from_rows(WISH_ROWS, WISH), (60, 46, 26), skip=(WISH["g"],))
+    png(os.path.join(OUT, "wishbone.png"), wish)
 
 
 if __name__ == "__main__":

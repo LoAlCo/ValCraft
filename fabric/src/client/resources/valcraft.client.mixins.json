@@ -23,7 +23,10 @@
     "WaitingForPlayerChunkMixin",
     "WindowMixin",
     "WorldOpenFlowsMixin",
-    "ItemInHandMixin"
+    "ItemInHandMixin",
+    "BoatWaveTiltMixin"
   ],
-  "injectors": { "defaultRequire": 1 }
+  "injectors": {
+    "defaultRequire": 1
+  }
 }

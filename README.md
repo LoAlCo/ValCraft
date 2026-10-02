@@ -79,6 +79,7 @@ Holding a Minecraft hoe or the **Build Hammer** (Valheim's build mode):
 - **Movement:** Minecraft physics on Valheim's terrain, rocks, trees, buildings and dungeons, and swimming in Valheim's sea.
 - **Building:** placing and breaking Minecraft blocks in Valheim's scene, lit by its sun, shadows and fog. Torches and lava light the world, and Valheim's creatures bump into your builds.
 - **First person:** Minecraft's hands and held items are drawn in Valheim's scene, lit and shadowed by its sun, weather and lightning.
+- **Boats:** Minecraft boats and rafts float on Valheim's sea, lakes and rivers, ride and tilt with its waves, and row at water speed. Place them on the water or on the shore and push them in.
 - **Underwater:** diving under Valheim's sea (or into Minecraft water) gets fog, a tint, the surface seen from below, and muffled world sounds.
 - **Minecraft things:** entities (burning ones on fire), particles, chests and furnaces, TNT, arrows, fishing lines, leads, dropped items, and your own Minecraft body in third person.
 - **Combat:** Minecraft weapons and arrows hit Valheim creatures, and their hits come back as Minecraft damage, with armor and shields.
@@ -87,7 +88,7 @@ Holding a Minecraft hoe or the **Build Hammer** (Valheim's build mode):
 - **Hoe:** a Minecraft hoe works like Valheim's: level ground, raise ground, paths and paved roads, from Valheim's own hoe menu. Stone costs come out of your Minecraft cobblestone.
 - **Building (experimental):** the **Build Hammer** (crafted from planks and sticks: three planks on top, planks either side of a stick, a stick below) builds with Valheim's own pieces, menu and workbench rules. The costs are Minecraft items from your inventory, shown with Minecraft's icons (Wood = oak logs, Stone = cobblestone, Surtling Core = fire charge, ...). Every piece is unlocked for now. Creative builds for free.
 - **Pausing:** pausing Valheim when you play alone pauses Minecraft too.
-- **Bosses:** the use key (G) at an altar, boss item stand or locked door offers its item for you, from your Minecraft inventory or the hidden Valheim inventory, and says where it came from. Boss items have Minecraft versions: ValCraft's own **Deer Trophy** (Eikthyr) and **Fuling Totem** (Yagluth), and Pitcher Pod (Ancient Seed), Skeleton Skull (Withered Bone), Sniffer Egg (Dragon Egg), Trial Key (Crypt Key), Ominous Trial Key (Sealbreaker) and Bell. Boss hits are scaled like any other creature's.
+- **Bosses:** the use key (G) at an altar, boss item stand or locked door offers its item for you, from your Minecraft inventory or the hidden Valheim inventory, and says where it came from. Every boss's summoning item and drops are ValCraft Minecraft items, redrawn from Valheim's icons (Deer Trophy, Ancient Seed, Withered Bone, Dragon Egg, Fuling Totem, Sealbreaker, Bell, Hard Antler, Swamp Key, Wishbone, Dragon Tear, Torn Spirit, Majestic Carapace, Kindled Ribs and the boss trophies). Boss hits are scaled like any other creature's.
 - **Loot:** Valheim loot goes into the Minecraft inventory (wood becomes oak logs, stone becomes cobblestone, and so on). Edit the mapping in `BepInEx/config/ValCraft.loot.txt`.
 - **Block terrain (F8):** Valheim's ground becomes real Minecraft blocks you can mine and build into, by biome, with ores below. It uses its own Minecraft save per world; your inventory, stats and builds follow you across both (blocks you dig out of the terrain stay in block mode).
 - **Time:** Minecraft's time of day follows Valheim's.
@@ -108,6 +109,7 @@ In `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor, or
 | `[Combat] Range` | How far (metres) Valheim creatures can be fought from Minecraft |
 | `[Controls] ValheimControls`, `BlockTerrain`, `Use`, `MinecraftOptions`, `Map`, `BuildRotate` | ValCraft's own keys (F7, F8, G, O, M, Alt); see Controls |
 | `[Debug] Diagnostics` | Extra logging, for bug reports |
+| `[Debug] ExportIcons`, `ExportIconsList` | Save Valheim's item icons as PNGs (for making ValCraft's Minecraft versions of items) |
 
 `BepInEx/config/ValCraft.loot.txt` lists which Minecraft item each Valheim item becomes. Building uses the same list in reverse for its costs.
 
@@ -128,7 +130,8 @@ In `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor, or
 | `valheim/ValCraft` | BepInEx plugin (C#): link, puppet, input, collision export, overlay, rendering, combat, loot, launcher |
 | `fabric/` | Fabric mod for Minecraft 26.3 (Java 25), forked from SkyCraft |
 | `protocol/valcraft_protocol.h` | Shared-memory layout, mirrored by `Link/Proto.cs` and `link/Proto.java` |
-| `tools/make_hammer_texture.py`, `tools/make_item_textures.py` | Draw ValCraft's 16x16 item textures (Build Hammer, Deer Trophy, Fuling Totem) |
+| `tools/make_hammer_texture.py`, `tools/make_item_textures.py` | Draw ValCraft's hand-made 16x16 item textures (Build Hammer, Deer Trophy, Fuling Totem, Wishbone) |
+| `tools/pixelize_icons.py` | Makes the other boss items' 16x16 textures from Valheim's icons (exported with `[Debug] ExportIcons`; the icons themselves stay out of the repo) |
 | `installer/` | The optional step-by-step installer (WinForms, .NET Framework 4.8 built into Windows); `make_icon.py` draws its icon |
 | `tools/package.py` | Builds both halves, the release zips and the installer into `dist/` |
 | `tools/minecraft-bundle/` | The Prism instance and settings packed into `ValCraft-Minecraft.zip` |
