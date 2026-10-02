@@ -121,6 +121,7 @@ In `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor, or
 - Building with the Build Hammer is experimental and not everything has been tried.
 - Not every Valheim material has a Minecraft counterpart yet (some trophies and late-game items). Pieces that need one take it from the Valheim inventory, so they may not be buildable for now. More will be added; you can add your own in `ValCraft.loot.txt`.
 - The Queen's Sealbreaker and Fader's bells are crafted from fragments at Valheim's own crafting stations, which hasn't been tried with ValCraft yet.
+- Other players see your Viking standing in the water while you're in a boat, and Valheim's creatures don't bump into boats.
 - Minecraft's portals (Nether and End) don't work. They may or may not be added later.
 
 ## Layout
