@@ -23,7 +23,7 @@ ValCraft lets you play Valheim as a Minecraft player. It takes about 10 minutes 
 ## Step 3: Add ValCraft
 
 1. Download **`LoAlCo-ValCraft-<version>.zip`** from
-   **https://github.com/LoAlCo/ValCraft2/releases/latest**. Don't unzip it.
+   **https://github.com/LoAlCo/ValCraft/releases/latest**. Don't unzip it.
 2. In Gale, open the **File** menu (top left), then **Import**, then **Local mod**, and pick the zip.
 3. Gale installs **BepInEx** with it automatically. If it asks to install dependencies, say yes.
 
@@ -53,10 +53,12 @@ After the first time, just click **Launch game**. Minecraft starts and closes by
 
 - **Only Valheim, no Minecraft:** look for a Prism Launcher window behind the game (Alt-Tab).
   It's waiting for the sign-in from Step 4.
+- **Prism says the sign-in failed, or Minecraft never starts:** Microsoft's sign-in servers may be
+  down. Wait a while and launch again; nothing on your side needs fixing.
 - **"Minecraft still hasn't connected":** close Valheim, open Task Manager, end any `javaw.exe`,
   and launch again.
 - **Still stuck:** in Gale, open the profile folder (Profile menu, then Open folder) and send
-  `BepInEx/LogOutput.log` with your bug report at https://github.com/LoAlCo/ValCraft2/issues.
+  `BepInEx/LogOutput.log` with your bug report at https://github.com/LoAlCo/ValCraft/issues.
 
 ## Uninstalling
 

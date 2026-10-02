@@ -156,7 +156,7 @@ def main():
     manifest = {
         "name": "ValCraft",
         "version_number": ver,
-        "website_url": "https://github.com/LoAlCo/ValCraft2",
+        "website_url": "https://github.com/LoAlCo/ValCraft",
         "description": "Play Valheim as a Minecraft player: Minecraft runs alongside and drives movement, inventory, blocks and combat.",
         "dependencies": ["denikson-BepInExPack_Valheim-5.4.2350"],
     }

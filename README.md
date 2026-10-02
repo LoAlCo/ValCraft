@@ -1,4 +1,4 @@
-# ValCraft 2
+# ValCraft
 
 A passthrough mod: Minecraft and Valheim run at the same time and talk through shared memory.
 You play Valheim's world as a Minecraft player, with Minecraft's movement, inventory, HUD, hand,
@@ -15,9 +15,13 @@ Based on [SkyCraft](https://github.com/chasmlol/SkyCraft) by chasmlol (Minecraft
 Fabric mod in `fabric/` is a fork of SkyCraft's (MIT, see [NOTICE.md](NOTICE.md)). The Valheim side
 is new.
 
+The earlier, non-passthrough ValCraft (Minecraft mechanics rebuilt inside Valheim) is now
+[MinecraftMode](https://github.com/LoAlCo/MinecraftMode).
+
 ## Play
 
-**New here? Follow [INSTALL.md](INSTALL.md)**: download the release zip, import it into Gale, and launch.
+**New here? Follow [INSTALL.md](INSTALL.md)**: download the zip from
+[Releases](https://github.com/LoAlCo/ValCraft/releases/latest), import it into Gale, and launch.
 The rest of this section covers the details.
 
 **You need:** Valheim on Steam, a Microsoft account that owns Minecraft: Java Edition, and Gale (or

@@ -7,7 +7,7 @@ using ValCraft.Link;
 
 namespace ValCraft
 {
-    // ValCraft 2: a passthrough mod. Minecraft (with the ValCraft Fabric mod) runs next to Valheim;
+    // ValCraft: a passthrough mod. Minecraft (with the ValCraft Fabric mod) runs next to Valheim;
     // Minecraft is the player (movement, inventory, HUD, blocks), Valheim is the world.
     [BepInPlugin(Guid, "ValCraft", Version)]
     public class Plugin : BaseUnityPlugin

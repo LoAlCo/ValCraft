@@ -6,7 +6,7 @@
   "description": "Play Valheim with Minecraft physics, inventory and viewmodels.",
   "authors": ["LoAlCo", "chasmlol (SkyCraft, the original)"],
   "contact": {
-    "sources": "https://github.com/LoAlCo/ValCraft2"
+    "sources": "https://github.com/LoAlCo/ValCraft"
   },
   "license": "MIT",
   "environment": "client",
