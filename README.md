@@ -79,6 +79,7 @@ Holding a Minecraft hoe or the **Build Hammer** (Valheim's build mode):
 - **Movement:** Minecraft physics on Valheim's terrain, rocks, trees, buildings and dungeons, and swimming in Valheim's sea.
 - **Building:** placing and breaking Minecraft blocks in Valheim's scene, lit by its sun, shadows and fog. Torches and lava light the world, and Valheim's creatures bump into your builds.
 - **First person:** Minecraft's hands and held items are drawn in Valheim's scene, lit and shadowed by its sun, weather and lightning.
+- **Explosions:** TNT and creepers blow craters in Valheim's ground and smash its trees, rocks and buildings; both are multipliers in `[Explosions]`.
 - **Boats:** Minecraft boats and rafts float on Valheim's sea, lakes and rivers, ride and tilt with its waves, and row at water speed. Place them on the water or on the shore and push them in.
 - **Underwater:** diving under Valheim's sea (or into Minecraft water) gets fog, a tint, the surface seen from below, and muffled world sounds.
 - **Minecraft things:** entities (burning ones on fire), particles, chests and furnaces, TNT, arrows, fishing lines, leads, dropped items, and your own Minecraft body in third person.
@@ -107,6 +108,8 @@ In `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor, or
 | `[Mobs] Pathfinding` | `High`, `Balanced` or `Low`: how hard Minecraft's mobs work out their way (Low for slower PCs) |
 | `[Combat] DamageScale` | Minecraft damage times this is the damage Valheim creatures take |
 | `[Combat] Range` | How far (metres) Valheim creatures can be fought from Minecraft |
+| `[Explosions] Damage` | Multiplier for the damage Minecraft explosions (TNT, creepers) do to Valheim's creatures, trees, rocks and buildings (default 2) |
+| `[Explosions] Craters` | Multiplier for the size of the craters explosions blow in Valheim's ground (default 1; 0 = no craters) |
 | `[Controls] ValheimControls`, `BlockTerrain`, `Use`, `MinecraftOptions`, `Map`, `BuildRotate` | ValCraft's own keys (F7, F8, G, O, M, Alt); see Controls |
 | `[Debug] Diagnostics` | Extra logging, for bug reports |
 | `[Debug] ExportIcons`, `ExportIconsList` | Save Valheim's item icons as PNGs (for making ValCraft's Minecraft versions of items) |

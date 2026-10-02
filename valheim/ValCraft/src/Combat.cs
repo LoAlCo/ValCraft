@@ -17,6 +17,7 @@ namespace ValCraft
     {
         public static ConfigEntry<float> DamageScale;
         public static ConfigEntry<float> Range;
+        public static ConfigEntry<float> ExplosionDamage, ExplosionCraters;
 
         static readonly ActorRecord[] _records = new ActorRecord[Proto.MaxActors];
         static readonly Dictionary<uint, Character> _byId = new Dictionary<uint, Character>();
@@ -28,6 +29,10 @@ namespace ValCraft
             DamageScale = config.Bind("Combat", "DamageScale", 4f,
                 "Minecraft damage x this = Valheim damage (a diamond sword's 7, or 10.5 on a crit, becomes 28 / 42). Valheim's hits on you are divided by 5 on the Minecraft side.");
             Range = config.Bind("Combat", "Range", 48f, "Valheim creatures within this many metres get Minecraft stand-ins.");
+            ExplosionDamage = config.Bind("Explosions", "Damage", 2f,
+                "Multiplier for the damage Minecraft explosions (TNT, creepers) do to Valheim's creatures, trees, rocks and buildings. 1 = a TNT blast does about 100 at its centre, 2 = twice that.");
+            ExplosionCraters = config.Bind("Explosions", "Craters", 1f,
+                "Multiplier for the size of the craters Minecraft explosions blow in Valheim's ground. 1 = a TNT blast leaves one about 7 m across and 2 m deep, 2 = twice as big, 0 = no craters.");
             MobPathing = config.Bind("Mobs", "Pathfinding", "Balanced",
                 new ConfigDescription("How hard Minecraft's mobs work out their way over Valheim's terrain. High: they plan further and react quickest. Low: lightest on the CPU, for slower PCs (mobs re-plan less often and over shorter distances).",
                     new AcceptableValueList<string>("High", "Balanced", "Low")));
@@ -49,6 +54,7 @@ namespace ValCraft
         // Main thread, every frame.
         public static void Frame(float dt)
         {
+            Craters.Frame();
             var player = Player.m_localPlayer;
             bool active = Puppet.Puppeting && player && Shm.Valid;
 
@@ -276,13 +282,20 @@ namespace ValCraft
 
         static void Dig(Player player, Vector3 point)
         {
+            var prefab = DigPrefab();
+            if (prefab) global::Attack.SpawnOnHitTerrain(point, prefab, player, 0f, null, null);
+        }
+
+        // What a Valheim pickaxe leaves in the ground when it hits it (a dig).
+        static GameObject DigPrefab()
+        {
             if (!_digPrefab && ObjectDB.instance)
                 foreach (var go in ObjectDB.instance.m_items)
                 {
                     var shared = go ? go.GetComponent<ItemDrop>()?.m_itemData.m_shared : null;
                     if (shared != null && shared.m_spawnOnHitTerrain && shared.m_skillType == Skills.SkillType.Pickaxes) { _digPrefab = shared.m_spawnOnHitTerrain; break; }
                 }
-            if (_digPrefab) global::Attack.SpawnOnHitTerrain(point, _digPrefab, player, 0f, null, null);
+            return _digPrefab;
         }
 
         static void HitActor(Player player, Character target, McEvent ev)
@@ -339,7 +352,7 @@ namespace ValCraft
                 hit.m_hitType = HitData.HitType.PlayerHit;
                 hit.m_point = col.ClosestPoint(centre);
                 hit.m_dir = (hit.m_point - centre).sqrMagnitude > 1e-4f ? (hit.m_point - centre).normalized : Vector3.up;
-                float amount = radius * 25f * falloff * DamageScale.Value / 4f;
+                float amount = radius * 25f * falloff * DamageScale.Value / 4f * ExplosionDamage.Value;
                 hit.m_damage.m_blunt = amount;
                 hit.m_damage.m_chop = amount;
                 hit.m_damage.m_pickaxe = amount;
@@ -347,6 +360,7 @@ namespace ValCraft
                 hit.m_toolTier = 4;
                 d.Damage(hit);
             }
+            Craters.Add(centre, radius, ExplosionCraters.Value, DigPrefab());
             Plugin.Log($"explosion at {centre} radius {radius}");
         }
 
