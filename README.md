@@ -118,6 +118,7 @@ In `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor, or
 
 ## Known issues
 
+- You can sometimes slip through the floor of a steep crater in Valheim terrain; Valheim's rescue puts you back on top.
 - Minecraft mobs sometimes spin in place for a moment when their path breaks.
 - Valheim creatures don't fight back at Minecraft mobs yet.
 - Minecraft items lying on the ground don't follow you across F8 (block terrain on/off).
