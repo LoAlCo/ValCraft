@@ -16,5 +16,24 @@ namespace ValCraft
             h = 0f;
             return false;
         }
+
+        // Valheim's ground as the world made it, before any digging or raising. Valheim keeps its
+        // ground within 8 m of this (DigLimit): no pickaxe gets it lower.
+        public const float DigLimit = 8f;
+
+        static readonly System.Reflection.MethodInfo _baseHeight = HarmonyLib.AccessTools.Method(typeof(Heightmap), "GetWorldBaseHeight");
+        static readonly object[] _args = new object[2];
+
+        public static bool BaseHeight(Vector3 v, out float h)
+        {
+            h = 0f;
+            var hm = _last && _last.IsPointInside(v) ? _last : Heightmap.FindHeightmap(v);
+            if (!hm || _baseHeight == null) return false;
+            _args[0] = v;
+            _args[1] = 0f;
+            if (!(bool)_baseHeight.Invoke(hm, _args)) return false;
+            h = (float)_args[1];
+            return true;
+        }
     }
 }

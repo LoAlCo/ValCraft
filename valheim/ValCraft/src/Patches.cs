@@ -106,6 +106,30 @@ namespace ValCraft
         }
     }
 
+    // Valheim puts a character back on top of its ground once it's more than a metre below it (its
+    // fell-through-the-world rescue). In block terrain (F8) the player digs into Minecraft's blocks,
+    // which Valheim's ground doesn't follow, so there the same rule is measured from the deepest that
+    // ground can ever be dug (Ground.DigLimit under the ground as the world made it), which is where
+    // the block terrain's bedrock is: digging never sets it off, falling through the bedrock does.
+    // With Valheim's terrain it's Valheim's own check.
+    [HarmonyPatch(typeof(Character), "UnderWorldCheck")]
+    static class UnderWorldPatch
+    {
+        static bool Prefix(Character __instance, Rigidbody ___m_body)
+        {
+            if (!(Puppet.MinecraftOwnsPlayer && BlockTerrain.On && __instance == Player.m_localPlayer) || __instance.IsDead()) return true;
+            var position = __instance.transform.position;
+            if (!Ground.BaseHeight(position, out float baseHeight)) return true;
+            if (position.y < baseHeight - Ground.DigLimit - 1f)
+            {
+                position.y = ZoneSystem.instance.GetGroundHeight(position) + 0.5f;
+                __instance.transform.position = position;
+                if (___m_body) { ___m_body.position = position; ___m_body.linearVelocity = Vector3.zero; }
+            }
+            return false;
+        }
+    }
+
     // Number keys are Minecraft's hotbar.
     [HarmonyPatch(typeof(Player), nameof(Player.UseHotbarItem))]
     static class HotbarPatch

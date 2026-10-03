@@ -27,7 +27,7 @@ namespace ValCraft
         static bool _wasOn;
         static float _hideTimer;
         static uint _epoch;
-        static readonly byte[] _payload = new byte[16 + 256 * 4];
+        static readonly byte[] _payload = new byte[16 + 256 * 4 + 256];
 
         public static void Init(ConfigFile config)
         {
@@ -113,8 +113,10 @@ namespace ValCraft
                     }
         }
 
-        // Payload: cx, cz (Minecraft chunk), epoch, pad; then 256 columns [x + 16 z] of
-        // {short top (Minecraft y of the surface block), byte biome, byte surface fraction}.
+        // Payload: cx, cz (Minecraft chunk), epoch, flags (1: floors follow); then 256 columns [x + 16 z]
+        // of {short top (Minecraft y of the surface block), byte biome, byte surface fraction}; then 256
+        // bytes: how many blocks under top the bedrock goes (Valheim's dig limit, 8 m under the ground
+        // as the world made it).
         static unsafe bool SendChunk(int cx, int cz)
         {
             var gen = WorldGenerator.instance;
@@ -124,7 +126,7 @@ namespace ValCraft
                 *(int*)b = cx;
                 *(int*)(b + 4) = cz;
                 *(uint*)(b + 8) = _epoch;
-                *(uint*)(b + 12) = 0;
+                *(uint*)(b + 12) = 1;
                 byte* col = b + 16;
                 for (int z = 0; z < 16; z++)
                     for (int x = 0; x < 16; x++)
@@ -141,6 +143,10 @@ namespace ValCraft
                         c[2] = BiomeCode(biome);
                         // The exact surface: top + 0.5 + c[3] / 255 (Minecraft's mobs walk on it, ValGround).
                         c[3] = (byte)Mathf.Clamp(Mathf.RoundToInt((surface - top - 0.5f) * 255f), 0, 255);
+                        // Bedrock: its top face at the deepest Valheim's ground can be dug to.
+                        float floor = (Ground.BaseHeight(v, out float baseH) ? baseH : h) - Ground.DigLimit - (float)Coords.YOffset;
+                        int bedrock = Mathf.RoundToInt(floor) - 1;
+                        b[16 + 256 * 4 + x + 16 * z] = (byte)Mathf.Clamp(top - bedrock, 1, 255);
                     }
             }
             // Through the collision worker: the collision ring has a single writer.

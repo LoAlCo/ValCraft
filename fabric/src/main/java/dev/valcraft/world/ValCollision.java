@@ -317,8 +317,10 @@ public final class ValCollision {
 	/** cx, cz, epoch, pad; then 256 columns [x + 16 z] of {short top, byte biome, byte flags}. */
 	private static void readTerrain(MemorySegment s, long p) {
 		int cx = s.get(JAVA_INT, p), cz = s.get(JAVA_INT, p + 4);
+		boolean floors = (s.get(JAVA_INT, p + 12) & 1) != 0;
 		short[] top = new short[256];
 		byte[] biome = new byte[256];
+		byte[] floor = new byte[256];
 		short[] surface = new short[512];
 		for (int i = 0; i < 256; i++) {
 			long c = p + 16 + i * 4L;
@@ -326,9 +328,11 @@ public final class ValCollision {
 			biome[i] = s.get(JAVA_BYTE, c + 2);
 			surface[i] = top[i];
 			surface[256 + i] = (short) (s.get(JAVA_BYTE, c + 3) & 0xFF);
+			// how far under top the bedrock is (Valheim's dig limit); 12 from a Valheim side without it
+			floor[i] = floors ? s.get(JAVA_BYTE, p + 16 + 256 * 4L + i) : (byte) 12;
 		}
 		TERRAIN.put(((long) cx << 32) ^ (cz & 0xFFFFFFFFL), surface);
-		TerrainGen.receive(cx, cz, top, biome);
+		TerrainGen.receive(cx, cz, top, biome, floor);
 	}
 
 	/** The y of Valheim's terrain surface block at this column, or Integer.MIN_VALUE when not known. */

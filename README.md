@@ -79,7 +79,7 @@ Holding a Minecraft hoe or the **Build Hammer** (Valheim's build mode):
 - **Movement:** Minecraft physics on Valheim's terrain, rocks, trees, buildings and dungeons, and swimming in Valheim's sea.
 - **Building:** placing and breaking Minecraft blocks in Valheim's scene, lit by its sun, shadows and fog. Torches and lava light the world, and Valheim's creatures bump into your builds.
 - **First person:** Minecraft's hands and held items are drawn in Valheim's scene, lit and shadowed by its sun, weather and lightning.
-- **Explosions:** TNT and creepers blow craters in Valheim's ground and smash its trees, rocks and buildings; both are multipliers in `[Explosions]`.
+- **Explosions:** TNT and creepers blow craters in Valheim's ground and smash its trees, rocks and buildings; both are multipliers in `[Explosions]`. The stone and wood they knock loose gathers into stacks, so a big blast doesn't leave hundreds of loose drops.
 - **Boats:** Minecraft boats and rafts float on Valheim's sea, lakes and rivers, ride and tilt with its waves, and row at water speed. Place them on the water or on the shore and push them in.
 - **Underwater:** diving under Valheim's sea (or into Minecraft water) gets fog, a tint, the surface seen from below, and muffled world sounds.
 - **Minecraft things:** entities (burning ones on fire), particles, chests and furnaces, TNT, arrows, fishing lines, leads, dropped items, and your own Minecraft body in third person.
@@ -91,7 +91,7 @@ Holding a Minecraft hoe or the **Build Hammer** (Valheim's build mode):
 - **Pausing:** pausing Valheim when you play alone pauses Minecraft too.
 - **Bosses:** the use key (G) at an altar, boss item stand or locked door offers its item for you, from your Minecraft inventory or the hidden Valheim inventory, and says where it came from. Every boss's summoning item and drops are ValCraft Minecraft items, redrawn from Valheim's icons (Deer Trophy, Ancient Seed, Withered Bone, Dragon Egg, Fuling Totem, Sealbreaker, Bell, Hard Antler, Swamp Key, Wishbone, Dragon Tear, Torn Spirit, Majestic Carapace, Kindled Ribs and the boss trophies). Boss hits are scaled like any other creature's.
 - **Loot:** Valheim loot goes into the Minecraft inventory (wood becomes oak logs, stone becomes cobblestone, and so on). Edit the mapping in `BepInEx/config/ValCraft.loot.txt`.
-- **Block terrain (F8):** Valheim's ground becomes real Minecraft blocks you can mine and build into, by biome, with ores below. It uses its own Minecraft save per world; your inventory, stats and builds follow you across both (blocks you dig out of the terrain stay in block mode).
+- **Block terrain (F8):** Valheim's ground becomes real Minecraft blocks you can mine and build into, by biome, with ores below. It uses its own Minecraft save per world; your inventory, stats and builds follow you across both (blocks you dig out of the terrain stay in block mode). The blocks go down to bedrock where Valheim's own digging stops (8 m under its ground), and they follow changes made to Valheim's ground in the meantime (TNT craters, digging, the hoe) without touching your builds.
 - **Time:** Minecraft's time of day follows Valheim's.
 - **Death:** dying in Minecraft kills your Viking too, with Valheim's death screen, tombstone and respawn.
 - **Multiplayer:** you can play with unmodded Valheim players. They see your Viking walk, run, swim, crouch and jump, and fights and loot sync. They don't see your Minecraft blocks or mobs.
