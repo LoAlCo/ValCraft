@@ -18,6 +18,7 @@ namespace ValCraft
         public static ConfigEntry<float> DamageScale;
         public static ConfigEntry<float> Range;
         public static ConfigEntry<float> ExplosionDamage, ExplosionCraters;
+        public static ConfigEntry<bool> CreeperGriefing, NaturalSpawning;
 
         static readonly ActorRecord[] _records = new ActorRecord[Proto.MaxActors];
         static readonly Dictionary<uint, Character> _byId = new Dictionary<uint, Character>();
@@ -33,6 +34,10 @@ namespace ValCraft
                 "Multiplier for the damage Minecraft explosions (TNT, creepers) do to Valheim's creatures, trees, rocks and buildings. 1 = a TNT blast does about 100 at its centre, 2 = twice that.");
             ExplosionCraters = config.Bind("Explosions", "Craters", 1f,
                 "Multiplier for the size of the craters Minecraft explosions blow in Valheim's ground. 1 = a TNT blast leaves one about 7 m across and 2 m deep, 2 = twice as big, 0 = no craters.");
+            CreeperGriefing = config.Bind("Explosions", "CreeperGriefing", false,
+                "Creeper explosions break the environment: craters in Valheim's ground, trees, rocks and building pieces, and Minecraft blocks in block terrain (Minecraft's mobGriefing rule, so endermen pick up blocks too). Off: they still hurt players and creatures. TNT always breaks things.");
+            NaturalSpawning = config.Bind("Mobs", "NaturalSpawning", false,
+                "Minecraft mobs spawn on their own in Valheim's world: monsters at night, animals any time, chosen by biome (husks on the Plains, strays in the Mountains, slimes and witches in the Swamp, ...). Off: only spawn eggs and commands make them.");
             MobPathing = config.Bind("Mobs", "Pathfinding", "Balanced",
                 new ConfigDescription("How hard Minecraft's mobs work out their way over Valheim's terrain. High: they plan further and react quickest. Low: lightest on the CPU, for slower PCs (mobs re-plan less often and over shorter distances).",
                     new AcceptableValueList<string>("High", "Balanced", "Low")));
@@ -43,6 +48,10 @@ namespace ValCraft
 
         /** Mobs' pathfinding setting for Minecraft (Proto.ValMobPathingShift). */
         public static uint MobPathingBits => (MobPathing == null ? 0u : MobPathing.Value == "Low" ? 1u : MobPathing.Value == "High" ? 2u : 0u) << Proto.ValMobPathingShift;
+
+        /** [Mobs] NaturalSpawning and [Explosions] CreeperGriefing for Minecraft (Proto.ValMobSpawning / ValMobGriefing). */
+        public static uint MobSpawningBits => (NaturalSpawning != null && NaturalSpawning.Value ? Proto.ValMobSpawning : 0u) |
+                                              (CreeperGriefing != null && CreeperGriefing.Value ? Proto.ValMobGriefing : 0u);
 
         public static uint IdOf(Character c)
         {
@@ -147,7 +156,8 @@ namespace ValCraft
             }
         }
 
-        const uint EvHitActor = 1, EvPlayerDied = 2, EvExplosion = 3, EvArrowStuck = 4, EvSkillUse = 5, EvValheimHit = 6, EvBuildSync = 7;
+        const uint ExplosionKeepsBlocks = 1;  // EV_EXPLOSION flags: broke no blocks (creeper, mobGriefing off)
+        const uint EvHitActor = 1, EvPlayerDied = 2, EvExplosion = 3, EvArrowStuck = 4, EvSkillUse = 5, EvValheimHit = 6, EvBuildSync = 7, EvSetTime = 9;
         const uint HitCritical = 1, HitProjectile = 2, HitSweep = 4, HitFire = 8, HitMob = 16;
         const uint WeaponUnarmed = 0, WeaponBlade = 1, WeaponAxe = 2, WeaponBlunt = 3, WeaponPierce = 4, WeaponArrow = 5;
 
@@ -166,7 +176,7 @@ namespace ValCraft
                     player.SetHealth(0f);
                     break;
                 case EvExplosion:
-                    Explosion(player, new Vector3d(ev.a, ev.b, ev.c), ev.d);
+                    Explosion(player, new Vector3d(ev.a, ev.b, ev.c), ev.d, (ev.flags & ExplosionKeepsBlocks) == 0);
                     break;
                 case EvSkillUse:
                     // Minecraft reports shield blocks as ActorValue 9 (Block).
@@ -174,6 +184,9 @@ namespace ValCraft
                     break;
                 case EvValheimHit:
                     Harvest(player, ev.formId, new Vector3d(ev.a, ev.b, ev.c), ev.d);
+                    break;
+                case EvSetTime:
+                    SetTime(ev.a, ev.b);
                     break;
                 case EvBuildSync:
                     // Minecraft is putting builds from the other terrain mode (F8) into this one.
@@ -330,8 +343,8 @@ namespace ValCraft
         }
 
         // TNT and creepers: hurt Valheim creatures and break trees, rocks and building pieces like a
-        // big blunt hit, falling off with distance.
-        static void Explosion(Player player, Vector3d centreMc, float radius)
+        // big blunt hit, falling off with distance. Not environment: creatures only, no crater.
+        static void Explosion(Player player, Vector3d centreMc, float radius, bool environment)
         {
             var centre = Coords.ToValheim(centreMc);
             float reach = radius * 2f;
@@ -342,6 +355,7 @@ namespace ValCraft
                 var d = col.GetComponentInParent<IDestructible>();
                 if (d == null || !seen.Add(d)) continue;
                 if (d is Character c && c == player) continue;  // Minecraft already hurt the player
+                if (!environment && !(d is Character)) continue;
                 var mb = d as MonoBehaviour;
                 if (!mb) continue;
                 float dist = Vector3.Distance(centre, col.ClosestPoint(centre));
@@ -360,8 +374,39 @@ namespace ValCraft
                 hit.m_toolTier = 4;
                 d.Damage(hit);
             }
-            Craters.Add(centre, radius, ExplosionCraters.Value, DigPrefab());
-            Plugin.Log($"explosion at {centre} radius {radius}");
+            if (environment) Craters.Add(centre, radius, ExplosionCraters.Value, DigPrefab());
+            Plugin.Log($"explosion at {centre} radius {radius}{(environment ? "" : " (creatures only)")}");
+        }
+
+        // Minecraft's /time set or /time add: Valheim's clock goes forward to that hour (Minecraft's
+        // hours, which follow Valheim's sky), plus any whole days skipped. Only the host can.
+        static void SetTime(float hour, float days)
+        {
+            var net = ZNet.instance;
+            var env = EnvMan.instance;
+            if (!net || !env) return;
+            if (!net.IsServer())
+            {
+                Plugin.Message("ValCraft: only the host can change the time");
+                return;
+            }
+            double length = env.m_dayLengthSec;
+            double now = net.GetTimeSeconds();
+            double raw = now % length / length;
+            double want = RawDayFraction(Mathf.Repeat(hour / 24f, 1f));
+            double ahead = want - raw;
+            if (ahead < 0) ahead += 1;
+            double to = now + (ahead + Mathf.Max(0f, Mathf.Floor(days))) * length;
+            net.SetNetTime(to);
+            Plugin.Log($"time: Minecraft's /time moves Valheim to {hour:F1}h (+{days:F0} days, {to - now:F0} s ahead)");
+        }
+
+        // The inverse of EnvMan.RescaleDayFraction: the sky's day fraction (0.25 = 6:00) to the clock's.
+        static double RawDayFraction(float shown)
+        {
+            if (shown < 0.25f) return shown / 0.25f * 0.15f;
+            if (shown <= 0.75f) return 0.15f + (shown - 0.25f) / 0.5f * 0.7f;
+            return 0.85f + (shown - 0.75f) / 0.25f * 0.15f;
         }
 
         // ---- Valheim hits the player --------------------------------------------------------------

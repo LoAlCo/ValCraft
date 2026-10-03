@@ -321,13 +321,14 @@ public final class ValCollision {
 		short[] top = new short[256];
 		byte[] biome = new byte[256];
 		byte[] floor = new byte[256];
-		short[] surface = new short[512];
+		short[] surface = new short[768]; // top, then fraction, then biome
 		for (int i = 0; i < 256; i++) {
 			long c = p + 16 + i * 4L;
 			top[i] = s.get(JAVA_SHORT, c);
 			biome[i] = s.get(JAVA_BYTE, c + 2);
 			surface[i] = top[i];
 			surface[256 + i] = (short) (s.get(JAVA_BYTE, c + 3) & 0xFF);
+			surface[512 + i] = biome[i];
 			// how far under top the bedrock is (Valheim's dig limit); 12 from a Valheim side without it
 			floor[i] = floors ? s.get(JAVA_BYTE, p + 16 + 256 * 4L + i) : (byte) 12;
 		}
@@ -339,6 +340,12 @@ public final class ValCollision {
 	public static int terrainTop(int x, int z) {
 		short[] top = TERRAIN.get(((long) (x >> 4) << 32) ^ ((z >> 4) & 0xFFFFFFFFL));
 		return top == null ? Integer.MIN_VALUE : top[(x & 15) + 16 * (z & 15)];
+	}
+
+	/** The Valheim biome (TerrainGen.BIOME_*) at this column, or 0 when not known. */
+	public static int terrainBiome(int x, int z) {
+		short[] t = TERRAIN.get(((long) (x >> 4) << 32) ^ ((z >> 4) & 0xFFFFFFFFL));
+		return t == null ? 0 : t[512 + (x & 15) + 16 * (z & 15)];
 	}
 
 	/** The exact height of Valheim's terrain surface at this column, or NaN when not known. */

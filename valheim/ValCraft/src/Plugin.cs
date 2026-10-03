@@ -13,7 +13,7 @@ namespace ValCraft
     public class Plugin : BaseUnityPlugin
     {
         public const string Guid = "loalco.valcraft";
-        public const string Version = "0.5.8";
+        public const string Version = "0.5.9";
 
         public static Plugin Instance;
         public static bool Paused;  // F7: Valheim has its own controls back

@@ -71,12 +71,16 @@ public final class Proto {
 	public static final int EV_HIT_ACTOR = 1;
 	public static final int EV_PLAYER_DIED = 2;
 	public static final int EV_EXPLOSION = 3;
+	/** EV_EXPLOSION flags: it broke no blocks (a creeper with mobGriefing off), so it hurts creatures only. */
+	public static final int EXPLOSION_KEEPS_BLOCKS = 1;
 	public static final int EV_ARROW_STUCK = 4;
 	public static final int EV_SKILL_USE = 5;
 	// ValCraft: a swing at Valheim's world. formId = tool (TOOL_* | tier << 4), a/b/c = where it hit (MC), d = attack strength (0..1)
 	public static final int EV_VALHEIM_HIT = 6;
 	/** BuildSync: formId = 1 when builds from the other terrain mode start arriving, 0 once they're in. */
 	public static final int EV_BUILD_SYNC = 7;
+	/** TimeSync: a /time command; a = hour of day (0-24, Valheim's), b = whole days to skip besides. */
+	public static final int EV_SET_TIME = 9;
 	public static final int TOOL_NONE = 0, TOOL_SWORD = 1, TOOL_AXE = 2, TOOL_PICKAXE = 3, TOOL_SHOVEL = 4, TOOL_HOE = 5;
 	// Valheim skills (ActorValue) Minecraft reports use of; weapon skills come from EV_HIT_ACTOR.
 	public static final int SKILL_BLOCK = 9;
@@ -170,6 +174,10 @@ public final class Proto {
 	public static final int VAL_MOB_PATHING_SHIFT = 4;
 	/** Valheim's game is paused (single player with its menu open): Minecraft pauses too. */
 	public static final int VAL_PAUSED = 1 << 6;
+	/** ValCraft: [Mobs] NaturalSpawning, Minecraft mobs spawn on Valheim's ground (MobSpawner). */
+	public static final int VAL_MOB_SPAWNING = 1 << 7;
+	/** ValCraft: [Explosions] CreeperGriefing, Minecraft's mobGriefing rule. */
+	public static final int VAL_MOB_GRIEFING = 1 << 8;
 
 	// McState (relative to OFF_MC_STATE)
 	public static final long MS_SEQ = 0x00;

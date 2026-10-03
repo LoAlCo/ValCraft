@@ -26,6 +26,7 @@
     "ProjectileMixin",
     "ProjectileUtilMixin",
     "ServerExplosionMixin",
+    "TimeCommandMixin",
     "ServerPlayerMixin",
     "SmithingMixin",
     "WalkNodeFloorValheimMixin",

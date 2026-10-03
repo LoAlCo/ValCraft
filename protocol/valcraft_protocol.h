@@ -61,6 +61,7 @@ namespace valcraft::proto
 		kValLoading = 1u << 2,   // loading screen / cell transition in progress
 		// ValCraft: bit 3 block terrain, bits 4-5 mob pathfinding (see Proto.cs / Proto.java)
 		kValPaused = 1u << 6,    // Valheim's game is paused (single player, menu open): pause MC too
+		// ValCraft: bit 7 mob natural spawning, bit 8 mob griefing
 	};
 
 	// Valheim's water (lakes, rivers, the sea) around the player, for Minecraft to treat as its own
@@ -257,6 +258,7 @@ namespace valcraft::proto
 		kEvSkillUse = 5,    // the player used a Valheim skill in Minecraft: formId = Valheim skill (ActorValue: 9 Block,
 		                    // 10 Smithing, 11 Heavy Armor, 12 Light Armor), a = uses (as Valheim's AdvanceSkill counts them)
 		kEvValheimHit = 6,  // a swing at Valheim's world: formId = tool (ToolKind | tier << 4), a/b/c = hit point (MC coords), d = attack strength 0..1
+		// ValCraft: 7 build sync, 9 set time (a = hour 0-24, b = extra days); see Proto.java
 	};
 
 	enum ToolKind : std::uint32_t

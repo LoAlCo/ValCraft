@@ -27,6 +27,7 @@ public final class ValCraft implements ModInitializer {
 		ServerLifecycleEvents.SERVER_STARTED.register(ValCraft::configureServer);
 		net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(dev.valcraft.world.TimeSync::tick);
 		net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(dev.valcraft.world.TerrainGen::tick);
+		net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(dev.valcraft.world.MobSpawner::tick);
 		dev.valcraft.world.PlayerSync.init();
 		dev.valcraft.world.BuildSync.init();
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
@@ -38,7 +39,7 @@ public final class ValCraft implements ModInitializer {
 		});
 	}
 
-	/** The mirror world is a void that only exists to host the player; Valheim drives time and spawning. */
+	/** The mirror world is a void that only exists to host the player; Valheim drives time, and spawning is MobSpawner's. */
 	private static void configureServer(MinecraftServer server) {
 		GameRules rules = server.getGameRules();
 		rules.set(GameRules.ADVANCE_TIME, false, server);

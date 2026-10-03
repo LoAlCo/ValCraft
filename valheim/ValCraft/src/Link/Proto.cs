@@ -38,6 +38,8 @@ namespace ValCraft.Link
         public const uint ValBlockTerrain = 1u << 3;  // ValCraft: block terrain on (Minecraft opens the -blocks save)
         // ValCraft: how hard Minecraft's mobs plan their way over Valheim terrain (bits 4-5): 0 balanced, 1 low, 2 high.
         public const int ValMobPathingShift = 4;
+        public const uint ValMobSpawning = 1u << 7;  // ValCraft: [Mobs] NaturalSpawning (MobSpawner.java)
+        public const uint ValMobGriefing = 1u << 8;  // ValCraft: [Explosions] CreeperGriefing (Minecraft's mobGriefing)
         public const uint ValPaused = 1u << 6;  // Valheim's game is paused (single player, menu open): Minecraft pauses too
 
         // McState.flags

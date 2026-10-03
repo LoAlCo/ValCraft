@@ -79,12 +79,12 @@ Holding a Minecraft hoe or the **Build Hammer** (Valheim's build mode):
 - **Movement:** Minecraft physics on Valheim's terrain, rocks, trees, buildings and dungeons, and swimming in Valheim's sea.
 - **Building:** placing and breaking Minecraft blocks in Valheim's scene, lit by its sun, shadows and fog. Torches and lava light the world, and Valheim's creatures bump into your builds.
 - **First person:** Minecraft's hands and held items are drawn in Valheim's scene, lit and shadowed by its sun, weather and lightning.
-- **Explosions:** TNT and creepers blow craters in Valheim's ground and smash its trees, rocks and buildings; both are multipliers in `[Explosions]`. The stone and wood they knock loose gathers into stacks, so a big blast doesn't leave hundreds of loose drops.
+- **Explosions:** TNT blows craters in Valheim's ground and smashes its trees, rocks and buildings; both are multipliers in `[Explosions]`. Creepers do too with `[Explosions] CreeperGriefing` on (off by default: they only hurt). The stone and wood they knock loose gathers into stacks, so a big blast doesn't leave hundreds of loose drops.
 - **Boats:** Minecraft boats and rafts float on Valheim's sea, lakes and rivers, ride and tilt with its waves, and row at water speed. Place them on the water or on the shore and push them in.
 - **Underwater:** diving under Valheim's sea (or into Minecraft water) gets fog, a tint, the surface seen from below, and muffled world sounds.
 - **Minecraft things:** entities (burning ones on fire), particles, chests and furnaces, TNT, arrows, fishing lines, leads, dropped items, and your own Minecraft body in third person.
 - **Combat:** Minecraft weapons and arrows hit Valheim creatures, and their hits come back as Minecraft damage, with armor and shields.
-- **Minecraft mobs:** they walk Valheim's terrain (around its rocks, logs and trees), and Minecraft's monsters and iron golems hunt Valheim's hostile creatures. How hard they plan their way is `[Mobs] Pathfinding` in the config (High, Balanced, Low) for slower PCs.
+- **Minecraft mobs:** they walk Valheim's terrain (around its rocks, logs and trees), and Minecraft's monsters and iron golems hunt Valheim's hostile creatures. How hard they plan their way is `[Mobs] Pathfinding` in the config (High, Balanced, Low) for slower PCs. With `[Mobs] NaturalSpawning` on they spawn by themselves: monsters at night and animals any time, picked by the Valheim biome (husks on the Plains, strays in the Mountains, slimes and witches in the Swamp, wither skeletons in the Ashlands, ...).
 - **Tools:** axes chop trees and pickaxes mine rocks, with Valheim's tool tiers. Shovels dig soil (dirt, grass, sand, snow); rock (steep slopes and paved ground) takes a pickaxe.
 - **Hoe:** a Minecraft hoe works like Valheim's: level ground, raise ground, paths and paved roads, from Valheim's own hoe menu. Stone costs come out of your Minecraft cobblestone.
 - **Building (experimental):** the **Build Hammer** (crafted from planks and sticks: three planks on top, planks either side of a stick, a stick below) builds with Valheim's own pieces, menu and workbench rules. The costs are Minecraft items from your inventory, shown with Minecraft's icons (Wood = oak logs, Stone = cobblestone, Surtling Core = fire charge, ...). Every piece is unlocked for now. Creative builds for free.
@@ -92,7 +92,7 @@ Holding a Minecraft hoe or the **Build Hammer** (Valheim's build mode):
 - **Bosses:** the use key (G) at an altar, boss item stand or locked door offers its item for you, from your Minecraft inventory or the hidden Valheim inventory, and says where it came from. Every boss's summoning item and drops are ValCraft Minecraft items, redrawn from Valheim's icons (Deer Trophy, Ancient Seed, Withered Bone, Dragon Egg, Fuling Totem, Sealbreaker, Bell, Hard Antler, Swamp Key, Wishbone, Dragon Tear, Torn Spirit, Majestic Carapace, Kindled Ribs and the boss trophies). Boss hits are scaled like any other creature's.
 - **Loot:** Valheim loot goes into the Minecraft inventory (wood becomes oak logs, stone becomes cobblestone, and so on). Edit the mapping in `BepInEx/config/ValCraft.loot.txt`.
 - **Block terrain (F8):** Valheim's ground becomes real Minecraft blocks you can mine and build into, by biome, with ores below. It uses its own Minecraft save per world; your inventory, stats and builds follow you across both (blocks you dig out of the terrain stay in block mode). The blocks go down to bedrock where Valheim's own digging stops (8 m under its ground), and they follow changes made to Valheim's ground in the meantime (TNT craters, digging, the hoe) without touching your builds.
-- **Time:** Minecraft's time of day follows Valheim's.
+- **Time:** Minecraft's time of day follows Valheim's, and Minecraft's `/time set` and `/time add` move Valheim's clock forward too (the host's).
 - **Death:** dying in Minecraft kills your Viking too, with Valheim's death screen, tombstone and respawn.
 - **Multiplayer:** you can play with unmodded Valheim players. They see your Viking walk, run, swim, crouch and jump, and fights and loot sync. They don't see your Minecraft blocks or mobs.
 
@@ -106,10 +106,12 @@ In `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor, or
 | `[Terrain] BlockTerrain` | Block terrain on at start (F8 toggles it in game) |
 | `[Terrain] Radius` | How far around you (metres) the ground becomes blocks |
 | `[Mobs] Pathfinding` | `High`, `Balanced` or `Low`: how hard Minecraft's mobs work out their way (Low for slower PCs) |
+| `[Mobs] NaturalSpawning` | Minecraft mobs spawn on their own in Valheim's world, by biome (default off) |
 | `[Combat] DamageScale` | Minecraft damage times this is the damage Valheim creatures take |
 | `[Combat] Range` | How far (metres) Valheim creatures can be fought from Minecraft |
 | `[Explosions] Damage` | Multiplier for the damage Minecraft explosions (TNT, creepers) do to Valheim's creatures, trees, rocks and buildings (default 2) |
 | `[Explosions] Craters` | Multiplier for the size of the craters explosions blow in Valheim's ground (default 1; 0 = no craters) |
+| `[Explosions] CreeperGriefing` | Creeper explosions break the environment, in Valheim and in block terrain (Minecraft's mobGriefing rule; default off) |
 | `[Controls] ValheimControls`, `BlockTerrain`, `Use`, `MinecraftOptions`, `Map`, `BuildRotate` | ValCraft's own keys (F7, F8, G, O, M, Alt); see Controls |
 | `[Debug] Diagnostics` | Extra logging, for bug reports |
 | `[Debug] ExportIcons`, `ExportIconsList` | Save Valheim's item icons as PNGs (for making ValCraft's Minecraft versions of items) |
