@@ -1,0 +1,22 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:display_context",
+    "cases": [
+      {
+        "when": [
+          "gui",
+          "fixed"
+        ],
+        "model": {
+          "type": "minecraft:model",
+          "model": "valcraft:item/ancient_bark_spear"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "valcraft:item/3d/ancient_bark_spear"
+    }
+  }
+}

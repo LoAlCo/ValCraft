@@ -90,6 +90,8 @@ Holding a Minecraft hoe or the **Build Hammer** (Valheim's build mode):
 - **Building (experimental):** the **Build Hammer** (crafted from planks and sticks: three planks on top, planks either side of a stick, a stick below) builds with Valheim's own pieces, menu and workbench rules. The costs are Minecraft items from your inventory, shown with Minecraft's icons (Wood = oak logs, Stone = cobblestone, Surtling Core = fire charge, ...). Every piece is unlocked for now. Creative builds for free.
 - **Pausing:** pausing Valheim when you play alone pauses Minecraft too.
 - **Bosses:** the use key (G) at an altar, boss item stand or locked door offers its item for you, from your Minecraft inventory or the hidden Valheim inventory, and says where it came from. Every boss's summoning item and drops are ValCraft Minecraft items, redrawn from Valheim's icons (Deer Trophy, Ancient Seed, Withered Bone, Dragon Egg, Fuling Totem, Sealbreaker, Bell, Hard Antler, Swamp Key, Wishbone, Dragon Tear, Torn Spirit, Majestic Carapace, Kindled Ribs and the boss trophies). Boss hits are scaled like any other creature's.
+- **Valheim items:** 165 Valheim items with no Minecraft counterpart are ValCraft Minecraft items, redrawn from Valheim's icons and models: ores and metals (Flametal, Bloodgold, Black Metal Scrap, ...), every seed, every mead and mead base, and every weapon and tool. Meads drink like potions: their Minecraft effects, plus the Valheim mead's own effect on your Viking. Weapons and tools work like Minecraft's of their kind (axes chop, pickaxes mine), with their own damage, speed and durability, and their hits on Valheim's creatures do the Valheim weapon's own damage, frost, fire, poison and all.
+- **3D weapons (optional):** the built-in **ValCraft 3D Weapons** resource pack (Options, Resource Packs) shows every Valheim weapon and tool as a blocky 3D model in your hand and on the ground, built from the Valheim weapon's shape and held at its real size; gems and runes glow. The inventory keeps the flat icons.
 - **Loot:** Valheim loot goes into the Minecraft inventory (wood becomes oak logs, stone becomes cobblestone, and so on). Edit the mapping in `BepInEx/config/ValCraft.loot.txt`.
 - **Block terrain (F8):** Valheim's ground becomes real Minecraft blocks you can mine and build into, by biome, with ores below. It uses its own Minecraft save per world; your inventory, stats and builds follow you across both (blocks you dig out of the terrain stay in block mode). The blocks go down to bedrock where Valheim's own digging stops (8 m under its ground), and they follow changes made to Valheim's ground in the meantime (TNT craters, digging, the hoe) without touching your builds.
 - **Time:** Minecraft's time of day follows Valheim's, and Minecraft's `/time set` and `/time add` move Valheim's clock forward too (the host's).
@@ -112,9 +114,11 @@ In `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor, or
 | `[Explosions] Damage` | Multiplier for the damage Minecraft explosions (TNT, creepers) do to Valheim's creatures, trees, rocks and buildings (default 2) |
 | `[Explosions] Craters` | Multiplier for the size of the craters explosions blow in Valheim's ground (default 1; 0 = no craters) |
 | `[Explosions] CreeperGriefing` | Creeper explosions break the environment, in Valheim and in block terrain (Minecraft's mobGriefing rule; default off) |
+| `[Camera] FOV` | Field of view, the same setting as Minecraft's FOV option: changing either changes both |
+| `[Camera] ViewmodelFOV`, `LockViewmodelFOV` | The field of view your hands and held item are drawn at; locked (default) it follows FOV |
 | `[Controls] ValheimControls`, `BlockTerrain`, `Use`, `MinecraftOptions`, `Map`, `BuildRotate` | ValCraft's own keys (F7, F8, G, O, M, Alt); see Controls |
 | `[Debug] Diagnostics` | Extra logging, for bug reports |
-| `[Debug] ExportIcons`, `ExportIconsList` | Save Valheim's item icons as PNGs (for making ValCraft's Minecraft versions of items) |
+| `[Debug] ExportIcons`, `ExportData`, `ExportRenders`, `ExportModels` | For making ValCraft's Minecraft versions of Valheim items: save Valheim's icons, item/recipe/creature tables, renders of item models, and samples of their shapes |
 
 `BepInEx/config/ValCraft.loot.txt` lists which Minecraft item each Valheim item becomes. Building uses the same list in reverse for its costs.
 
@@ -124,6 +128,8 @@ In `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor, or
 - Minecraft mobs sometimes spin in place for a moment when their path breaks.
 - Valheim creatures don't fight back at Minecraft mobs yet.
 - Minecraft items lying on the ground don't follow you across F8 (block terrain on/off).
+- Bows, arrows, shields, staffs, bombs, armor and capes don't have ValCraft versions yet (they stay in the Valheim inventory).
+- In first person, the biggest 3D weapons (the sledges) fill much of the view.
 - Building with the Build Hammer is experimental and not everything has been tried.
 - Not every Valheim material has a Minecraft counterpart yet (some trophies and late-game items). Pieces that need one take it from the Valheim inventory, so they may not be buildable for now. More will be added; you can add your own in `ValCraft.loot.txt`.
 - The Queen's Sealbreaker and Fader's bells are crafted from fragments at Valheim's own crafting stations, which hasn't been tried with ValCraft yet.

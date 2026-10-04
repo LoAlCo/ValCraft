@@ -5,6 +5,7 @@ its thickness, both centred on 0.
 
   python tools/weapons_3d.py [id ...]
 """
+import os
 import sys
 
 from blockmodels import Mat, Model, write_pack_meta
@@ -441,10 +442,18 @@ ALL = {**TOOLS, **WEAPONS}
 
 
 def main():
+    import weapons_3d_rest
     write_pack_meta()
-    for name in sys.argv[1:] or ALL:
-        boxes, size = ALL[name]().build()
+    rest = weapons_3d_rest.models()
+    every = {**{k: f() for k, f in ALL.items()}, **rest}
+    for name in sys.argv[1:] or every:
+        boxes, size = every[name].build()
         print(f"{name}: {boxes} boxes, {size}x{size} texture")
+    # every weapon in the item table should have one
+    tsv = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "valheim_items.tsv"), encoding="utf-8")
+    weapons = {c[0] for c in (line.split("\t") for line in tsv) if len(c) > 3 and c[3] == "weapon"}
+    missing = sorted(weapons - set(every))
+    print(f"{len(every)} 3D models; weapons without one: {', '.join(missing) or 'none'}")
 
 
 if __name__ == "__main__":
