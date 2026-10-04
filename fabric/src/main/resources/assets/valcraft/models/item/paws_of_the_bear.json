@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "valcraft:item/paws_of_the_bear"
+  }
+}

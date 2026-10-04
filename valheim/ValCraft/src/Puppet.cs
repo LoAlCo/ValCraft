@@ -272,6 +272,7 @@ namespace ValCraft
                 EyeRot = Quaternion.Euler(camPitch + bobPitch, Coords.McYawToUnity(camYaw), bobRoll);
                 EyeValid = true;
                 if (Mc.fovDeg > 1f) FovDeg = Mc.fovDeg;
+                CameraSettings.Read(Mc);
 
                 // Valheim uses the player's look direction for hover/interaction and what the body faces.
                 player.SetLookDir(look * Vector3.forward);
@@ -326,6 +327,7 @@ namespace ValCraft
             st.flags = (player != null ? Proto.ValInGame : 0u) | (menu ? Proto.ValMenuOpen : 0u) | (loading ? Proto.ValLoading : 0u) |
                        (BlockTerrain.On ? Proto.ValBlockTerrain : 0u) | Combat.MobPathingBits | Combat.MobSpawningBits |
                        (player != null && ZNet.instance && Game.IsPaused() ? Proto.ValPaused : 0u);
+            CameraSettings.Write(ref st);
             st.worldId = _worldId;
             st.collisionEpoch = Epoch;
             if (player != null)

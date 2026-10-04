@@ -35,6 +35,9 @@ public class ValheimActorEntity extends LivingEntity {
 	private float pendingDamage;
 	private int pendingFlags;
 	private int pendingWeapon;
+	/** A ValCraft Valheim weapon's prefab hash and Minecraft damage, or 0: Valheim uses its own damage. */
+	private int pendingValheimWeapon;
+	private float pendingValheimBase;
 	private double pushX, pushZ;
 	private float pushStrength;
 	private boolean hitThisTick;
@@ -106,6 +109,14 @@ public class ValheimActorEntity extends LivingEntity {
 			this.pendingFlags |= Proto.HIT_PROJECTILE;
 		}
 		this.pendingWeapon = weaponClass(source);
+		ItemStack held = source.getWeaponItem();
+		if (held == null && source.getEntity() instanceof LivingEntity attacker) {
+			held = attacker.getMainHandItem();
+		}
+		if (!(source.getDirectEntity() instanceof Projectile) && held != null && held.getItem() instanceof dev.valcraft.item.ValheimItems.Weapon w) {
+			this.pendingValheimWeapon = w.prefabHash;
+			this.pendingValheimBase = w.damage;
+		}
 		if (source.is(net.minecraft.tags.DamageTypeTags.IS_FIRE)) {
 			this.pendingFlags |= Proto.HIT_FIRE;
 		}
@@ -149,6 +160,9 @@ public class ValheimActorEntity extends LivingEntity {
 		if (weapon == null || weapon.isEmpty()) {
 			return Proto.WEAPON_UNARMED;
 		}
+		if (weapon.getItem() instanceof dev.valcraft.item.ValheimItems.Weapon) {
+			return weapon.is(ItemTags.AXES) ? Proto.WEAPON_AXE : Proto.WEAPON_BLADE;
+		}
 		if (weapon.is(ItemTags.SWORDS)) {
 			return Proto.WEAPON_BLADE;
 		}
@@ -167,7 +181,9 @@ public class ValheimActorEntity extends LivingEntity {
 			return null;
 		}
 		float[] hit = { this.pendingDamage, (float) this.pushX, (float) this.pushZ, this.pushStrength, Float.intBitsToFloat(this.pendingFlags),
-			Float.intBitsToFloat(this.pendingWeapon) };
+			Float.intBitsToFloat(this.pendingWeapon), Float.intBitsToFloat(this.pendingValheimWeapon), this.pendingValheimBase };
+		this.pendingValheimWeapon = 0;
+		this.pendingValheimBase = 0.0F;
 		this.pendingDamage = 0.0F;
 		this.pendingFlags = 0;
 		this.pushX = this.pushZ = 0.0;

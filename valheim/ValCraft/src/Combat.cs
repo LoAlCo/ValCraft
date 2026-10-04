@@ -157,7 +157,7 @@ namespace ValCraft
         }
 
         const uint ExplosionKeepsBlocks = 1;  // EV_EXPLOSION flags: broke no blocks (creeper, mobGriefing off)
-        const uint EvHitActor = 1, EvPlayerDied = 2, EvExplosion = 3, EvArrowStuck = 4, EvSkillUse = 5, EvValheimHit = 6, EvBuildSync = 7, EvSetTime = 9;
+        const uint EvHitActor = 1, EvPlayerDied = 2, EvExplosion = 3, EvArrowStuck = 4, EvSkillUse = 5, EvValheimHit = 6, EvBuildSync = 7, EvSetTime = 9, EvConsume = 10, EvHitWeapon = 11;
         const uint HitCritical = 1, HitProjectile = 2, HitSweep = 4, HitFire = 8, HitMob = 16;
         const uint WeaponUnarmed = 0, WeaponBlade = 1, WeaponAxe = 2, WeaponBlunt = 3, WeaponPierce = 4, WeaponArrow = 5;
 
@@ -184,6 +184,13 @@ namespace ValCraft
                     break;
                 case EvValheimHit:
                     Harvest(player, ev.formId, new Vector3d(ev.a, ev.b, ev.c), ev.d);
+                    break;
+                case EvHitWeapon:
+                    _hitWeapon = ValheimItemByHash((int)ev.formId);
+                    _hitWeaponBase = ev.a;
+                    break;
+                case EvConsume:
+                    Consume(player, (int)ev.formId);
                     break;
                 case EvSetTime:
                     SetTime(ev.a, ev.b);
@@ -311,8 +318,15 @@ namespace ValCraft
             return _digPrefab;
         }
 
+        // Set by EvHitWeapon: the next hit was made with a ValCraft version of this Valheim weapon.
+        static GameObject _hitWeapon;
+        static float _hitWeaponBase;
+
         static void HitActor(Player player, Character target, McEvent ev)
         {
+            var weapon = _hitWeapon ? _hitWeapon.GetComponent<ItemDrop>()?.m_itemData.m_shared : null;
+            float weaponBase = _hitWeaponBase;
+            _hitWeapon = null;
             float amount = ev.a * DamageScale.Value;
             var hit = new HitData();
             // A Minecraft mob's hit (zombie, skeleton's arrow, creeper): no attacker, so the creature
@@ -337,6 +351,18 @@ namespace ValCraft
                 default: hit.m_damage.m_blunt = amount; hit.m_skill = Skills.SkillType.Clubs; break;
             }
             if ((ev.flags & HitFire) != 0) hit.m_damage.m_fire = amount * 0.25f;
+            if (weapon != null && weaponBase > 0f)
+            {
+                // The Valheim weapon's own damage (with its fire, frost, poison, ...), by how much of a
+                // full Minecraft hit this was (attack cooldown, crits, strength).
+                var d = weapon.m_damages.Clone();
+                d.Modify(ev.a / weaponBase);
+                hit.m_damage = d;
+                hit.m_skill = weapon.m_skillType;
+                hit.m_toolTier = (short)weapon.m_toolTier;
+                hit.m_backstabBonus = weapon.m_backstabBonus;
+                amount = d.GetTotalDamage();
+            }
             if (byMob) hit.m_skill = Skills.SkillType.None;
             target.Damage(hit);
             Plugin.Log($"hit {target.m_name} for {amount:F1} (Minecraft {ev.a:F1}, weapon {ev.weapon}, flags {ev.flags})");
@@ -399,6 +425,36 @@ namespace ValCraft
             double to = now + (ahead + Mathf.Max(0f, Mathf.Floor(days))) * length;
             net.SetNetTime(to);
             Plugin.Log($"time: Minecraft's /time moves Valheim to {hour:F1}h (+{days:F0} days, {to - now:F0} s ahead)");
+        }
+
+        // Drank a Valheim mead's Minecraft version: the Viking gets the mead's own effect.
+        static void Consume(Player player, int prefabHash)
+        {
+            var prefab = ValheimItemByHash(prefabHash);
+            var se = prefab ? prefab.GetComponent<ItemDrop>()?.m_itemData.m_shared.m_consumeStatusEffect : null;
+            if (!se) { Plugin.Warn($"consume: no Valheim item with hash {prefabHash}"); return; }
+            player.GetSEMan().AddStatusEffect(se, resetTime: true);
+            Plugin.Log($"consume: {prefab.name} -> {se.name}");
+        }
+
+        static Dictionary<int, GameObject> _itemsByHash;
+
+        // Minecraft names Valheim items by their prefab name's Java String.hashCode().
+        public static GameObject ValheimItemByHash(int hash)
+        {
+            if (_itemsByHash == null && ObjectDB.instance && ObjectDB.instance.m_items.Count > 0)
+            {
+                _itemsByHash = new Dictionary<int, GameObject>();
+                foreach (var go in ObjectDB.instance.m_items) if (go) _itemsByHash[JavaHash(go.name)] = go;
+            }
+            return _itemsByHash != null && _itemsByHash.TryGetValue(hash, out var found) ? found : null;
+        }
+
+        public static int JavaHash(string s)
+        {
+            int h = 0;
+            unchecked { foreach (char c in s) h = 31 * h + c; }
+            return h;
         }
 
         // The inverse of EnvMan.RescaleDayFraction: the sky's day fraction (0.25 = 6:00) to the clock's.

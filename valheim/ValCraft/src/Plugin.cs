@@ -39,6 +39,9 @@ namespace ValCraft
             }
             InputBridge.Init(Config);
             IconExport.Init(Config);
+            ModelRender.Init(Config);
+            CameraSettings.Init(Config);
+            ModelExport.Init(Config);
             Combat.Init(Config);
             Launcher.Init(Config);
             BlockTerrain.Init(Config);
@@ -77,6 +80,8 @@ namespace ValCraft
                 Underwater.Frame();
                 BuildTools.Frame();
                 IconExport.Frame();
+                ModelRender.Frame();
+                ModelExport.Frame();
                 DropMerge.Frame();
                 t = Prof.Start(); WorldRender.Frame(Time.unscaledDeltaTime); Prof.Stop("render", t);
                 t = Prof.Start(); Combat.Frame(Time.unscaledDeltaTime); Prof.Stop("combat", t);

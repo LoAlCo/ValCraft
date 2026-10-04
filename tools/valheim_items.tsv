@@ -1,0 +1,185 @@
+# ValCraft's Minecraft versions of Valheim items with no Minecraft counterpart. Edit here, then run
+# python tools/gen_valheim_items.py (writes the item models, names, the table the mod registers
+# them from, and the loot lines that turn the Valheim item into this one). Textures: tools/item_art.
+#
+# id	Valheim prefab	English name	kind	stack	Minecraft effects (effect:level:seconds; ...)
+# kind: item = a plain item; mead = drinkable: its Minecraft effects here, and Valheim's own effect
+# on the Viking. "cure:poison" takes poison and wither away.
+# weapon = a weapon or tool: class (sword, greatsword, axe, battleaxe, club, sledge, knife, spear,
+# atgeir, fist, pickaxe, shovel, tool), Valheim tool tier, durability, Minecraft damage and attacks
+# a second; its hits on Valheim creatures do the Valheim weapon's own damage.
+
+# ores and metals
+glowing_metal_ore	FlametalOre	Glowing Metal Ore	item	64
+flametal_ore	FlametalOreNew	Flametal Ore	item	64
+bloodgold	Gold	Bloodgold	item	64
+petrified_tissue	GoldOre	Petrified Tissue	item	64
+black_metal_scrap	BlackMetalScrap	Black Metal Scrap	item	64
+bronze_scrap	BronzeScrap	Scrap Bronze	item	64
+sulfur	SulfurStone	Sulfur	item	64
+proustite_powder	ProustitePowder	Proustite Powder	item	64
+
+# seeds
+acorns	Acorn	Acorns	item	64
+beech_seeds	BeechSeeds	Beech Seeds	item	64
+birch_seeds	BirchSeeds	Birch Seeds	item	64
+fir_cone	FirCone	Fir Cone	item	64
+timberwood_cone	FirConeFrost	Timberwood Cone	item	64
+pine_cone	PineCone	Pine Cone	item	64
+kale_seeds	KaleSeeds	Kale Seeds	item	64
+oat_seeds	OatSeeds	Oat Seeds	item	64
+onion_seeds	OnionSeeds	Onion Seeds	item	64
+poteitr_seeds	PoteitrSeeds	Seed Poteitr	item	64
+ivy_seeds	VineGreenSeeds	Ivy Seeds	item	64
+vineberry_seeds	VineberrySeeds	Vineberry Seeds	item	64
+
+# meads
+minor_healing_mead	MeadHealthMinor	Minor Healing Mead	mead	10	instant_health:0:1; regeneration:0:10
+medium_healing_mead	MeadHealthMedium	Medium Healing Mead	mead	10	instant_health:1:1; regeneration:0:10
+major_healing_mead	MeadHealthMajor	Major Healing Mead	mead	10	instant_health:1:1; regeneration:1:15
+lingering_healing_mead	MeadHealthLingering	Lingering Healing Mead	mead	10	regeneration:0:60
+minor_stamina_mead	MeadStaminaMinor	Minor Stamina Mead	mead	10	saturation:0:1; speed:0:30
+medium_stamina_mead	MeadStaminaMedium	Medium Stamina Mead	mead	10	saturation:1:1; speed:0:60
+lingering_stamina_mead	MeadStaminaLingering	Lingering Stamina Mead	mead	10	saturation:0:1; speed:0:180
+poison_resistance_mead	MeadPoisonResist	Poison Resistance Mead	mead	10	cure:poison
+minor_eitr_mead	MeadEitrMinor	Minor Eitr Mead	mead	10
+lingering_eitr_mead	MeadEitrLingering	Lingering Eitr Mead	mead	10
+frost_resistance_mead	MeadFrostResist	Frost Resistance Mead	mead	10
+tonic_of_ratatosk	MeadHasty	Tonic of Ratatosk	mead	10	speed:1:300
+anti_sting_concoction	MeadBugRepellent	Anti-Sting Concoction	mead	10
+berserkir_mead	MeadBzerker	Berserkir Mead	mead	10	strength:1:60; speed:0:60
+lightfoot_mead	MeadLightfoot	Lightfoot Mead	mead	10	jump_boost:0:300; slow_falling:0:300
+troll_endurance_mead	MeadStrength	Mead of Troll Endurance	mead	10	strength:0:300
+draught_of_vananidir	MeadSwimmer	Draught of Vananidir	mead	10	dolphins_grace:0:300; water_breathing:0:300
+brew_of_animal_whispers	MeadTamer	Brew of Animal Whispers	mead	10
+tasty_mead	MeadTasty	Tasty Mead	mead	10	saturation:2:1; regeneration:0:20
+love_potion	MeadTrollPheromones	Love Potion	mead	10	glowing:0:60
+fire_resistance_barley_wine	BarleyWine	Fire Resistance Barley Wine	mead	10	fire_resistance:0:600
+
+# mead bases (ferment them in Valheim's fermenter)
+mead_base_minor_healing	MeadBaseHealthMinor	Mead Base: Minor Healing	item	10
+mead_base_medium_healing	MeadBaseHealthMedium	Mead Base: Medium Healing	item	10
+mead_base_major_healing	MeadBaseHealthMajor	Mead Base: Major Healing	item	10
+mead_base_lingering_healing	MeadBaseHealthLingering	Mead Base: Lingering Health	item	10
+mead_base_minor_stamina	MeadBaseStaminaMinor	Mead Base: Minor Stamina	item	10
+mead_base_medium_stamina	MeadBaseStaminaMedium	Mead Base: Medium Stamina	item	10
+mead_base_lingering_stamina	MeadBaseStaminaLingering	Mead Base: Lingering Stamina	item	10
+mead_base_poison_resistance	MeadBasePoisonResist	Mead Base: Poison Resistance	item	10
+mead_base_minor_eitr	MeadBaseEitrMinor	Mead Base: Minor Eitr	item	10
+mead_base_lingering_eitr	MeadBaseEitrLingering	Mead Base: Lingering Eitr	item	10
+mead_base_frost_resistance	MeadBaseFrostResist	Mead Base: Frost Resistance	item	10
+mead_base_ratatosk	MeadBaseHasty	Mead Base: Ratatosk	item	10
+mead_base_anti_sting	MeadBaseBugRepellent	Mead Base: Anti-Sting	item	10
+mead_base_berserkir	MeadBaseBzerker	Mead Base: Berserkir	item	10
+mead_base_lightfoot	MeadBaseLightFoot	Mead Base: Lightfoot	item	10
+mead_base_troll_endurance	MeadBaseStrength	Mead Base: Troll Endurance	item	10
+mead_base_vananidir	MeadBaseSwimmer	Mead Base: Vananidir	item	10
+mead_base_animal_whispers	MeadBaseTamer	Mead Base: Animal Whispers	item	10
+mead_base_tasty	MeadBaseTasty	Mead Base: Tasty	item	10
+barley_wine_base	BarleyWineBase	Barley Wine Base: Fire Resistance	item	10
+
+# weapons and tools (Minecraft damage from Valheim's: 2.5 ln(damage) - 1.5; durability x4)
+black_metal_atgeir	AtgeirBlackmetal	Black Metal Atgeir	weapon	1	class=atgeir tier=4 durability=700 damage=10.1 speed=1.1
+bronze_atgeir	AtgeirBronze	Bronze Atgeir	weapon	1	class=atgeir tier=1 durability=500 damage=8.0 speed=1.1
+nord_atgeir	AtgeirGold	Nord Atgeir	weapon	1	class=atgeir tier=1 durability=1600 damage=11.5 speed=1.1
+thunderblood_atgeir	AtgeirGold_BloodLightning	Thunderblood Atgeir	weapon	1	class=atgeir tier=1 durability=1600 damage=12.2 speed=1.1
+frostfire_atgeir	AtgeirGold_FrostFire	Frostfire Atgeir	weapon	1	class=atgeir tier=1 durability=1600 damage=12.3 speed=1.1
+himminafl	AtgeirHimminAfl	Himminafl	weapon	1	class=atgeir tier=5 durability=1000 damage=10.6 speed=1.1
+iron_atgeir	AtgeirIron	Iron Atgeir	weapon	1	class=atgeir tier=2 durability=700 damage=8.9 speed=1.1
+berserkir_axes	AxeBerzerkr	Berserkir Axes	weapon	1	class=battleaxe tier=6 durability=1200 damage=10.9 speed=0.9
+bleeding_berserkir_axes	AxeBerzerkrBlood	Bleeding Berserkir Axes	weapon	1	class=battleaxe tier=6 durability=1200 damage=10.9 speed=0.9
+thundering_berserkir_axes	AxeBerzerkrLightning	Thundering Berserkir Axes	weapon	1	class=battleaxe tier=6 durability=1200 damage=11.0 speed=0.9
+primal_berserkir_axes	AxeBerzerkrNature	Primal Berserkir Axes	weapon	1	class=battleaxe tier=6 durability=1200 damage=11.0 speed=0.9
+black_metal_axe	AxeBlackMetal	Black Metal Axe	weapon	1	class=axe tier=4 durability=700 damage=10.0 speed=1.0
+bronze_axe	AxeBronze	Bronze Axe	weapon	1	class=axe tier=2 durability=500 damage=7.7 speed=1.0
+early_axes	AxeEarly	Early Axes	weapon	1	class=axe tier=2 durability=700 damage=7.0 speed=1.0
+flint_axe	AxeFlint	Flint Axe	weapon	1	class=axe tier=1 durability=400 damage=6.0 speed=1.0
+nord_axe	AxeGold	Nord Axe	weapon	1	class=axe tier=6 durability=1600 damage=11.4 speed=1.0
+thunderblood_axe	AxeGold_BloodLightning	Thunderblood Axe	weapon	1	class=axe tier=6 durability=1600 damage=12.1 speed=1.0
+frostfire_axe	AxeGold_FrostFire	Frostfire Axe	weapon	1	class=axe tier=6 durability=1600 damage=12.2 speed=1.0
+iron_axe	AxeIron	Iron Axe	weapon	1	class=axe tier=3 durability=700 damage=8.7 speed=1.0
+jotun_bane	AxeJotunBane	Jotun Bane	weapon	1	class=axe tier=4 durability=1000 damage=10.5 speed=1.0
+stone_axe	AxeStone	Stone Axe	weapon	1	class=axe tier=0 durability=400 damage=5.3 speed=1.0
+battleaxe	Battleaxe	Battleaxe	weapon	1	class=battleaxe tier=3 durability=800 damage=9.1 speed=0.9
+black_metal_battleaxe	BattleaxeBlackmetal	Black Metal Battleaxe	weapon	1	class=battleaxe tier=4 durability=800 damage=10.3 speed=0.9
+crystal_battleaxe	BattleaxeCrystal	Crystal Battleaxe	weapon	1	class=battleaxe tier=3 durability=800 damage=10.5 speed=0.9
+nord_greataxe	BattleaxeGold	Nord Greataxe	weapon	1	class=battleaxe tier=4 durability=1600 damage=11.6 speed=0.9
+thunderblood_greataxe	BattleaxeGold_BloodLightning	Thunderblood Greataxe	weapon	1	class=battleaxe tier=4 durability=1600 damage=12.2 speed=0.9
+frostfire_greataxe	BattleaxeGold_FrostFire	Frostfire Greataxe	weapon	1	class=battleaxe tier=4 durability=1600 damage=12.3 speed=0.9
+skull_splittur	BattleaxeSkullSplittur	Skull Splittur	weapon	1	class=battleaxe tier=4 durability=800 damage=10.7 speed=0.9
+club	Club	Club	weapon	1	class=club tier=0 durability=400 damage=4.7 speed=1.2
+cultivator	Cultivator	Cultivator	weapon	1	class=tool tier=0 durability=800 damage=1.0 speed=1.0
+paws_of_the_bear	FistBjornClaw	Paws of the Bear	weapon	1	class=fist tier=3 durability=1200 damage=6.5 speed=2.2
+vilebone_maulclaws	FistBjornUndeadClaw	Vilebone Maulclaws	weapon	1	class=fist tier=3 durability=1200 damage=9.5 speed=2.2
+flesh_rippers	FistFenrirClaw	Flesh Rippers	weapon	1	class=fist tier=3 durability=1200 damage=8.7 speed=2.2
+nord_knucklechains	FistGold	Nord Knucklechains	weapon	1	class=fist tier=3 durability=1600 damage=10.3 speed=2.2
+thunderblood_knucklechains	FistGold_BloodLightning	Thunderblood Knucklechains	weapon	1	class=fist tier=3 durability=1600 damage=11.3 speed=2.2
+frostfire_knucklechains	FistGold_FrostFire	Frostfire Knucklechains	weapon	1	class=fist tier=3 durability=1600 damage=11.5 speed=2.2
+black_metal_knife	KnifeBlackMetal	Black Metal Knife	weapon	1	class=knife tier=4 durability=800 damage=9.0 speed=2.0
+butcher_knife	KnifeButcher	Butcher Knife	weapon	1	class=knife tier=1 durability=800 damage=1.0 speed=2.0
+abyssal_razor	KnifeChitin	Abyssal Razor	weapon	1	class=knife tier=3 durability=800 damage=7.7 speed=2.0
+copper_knife	KnifeCopper	Copper Knife	weapon	1	class=knife tier=1 durability=800 damage=6.4 speed=2.0
+flint_knife	KnifeFlint	Flint Knife	weapon	1	class=knife tier=0 durability=800 damage=4.3 speed=2.0
+nord_dagger	KnifeGold	Nord Dagger	weapon	1	class=knife tier=4 durability=1600 damage=11.0 speed=2.0
+thunderblood_dagger	KnifeGold_BloodLightning	Thunderblood Dagger	weapon	1	class=knife tier=4 durability=1600 damage=11.8 speed=2.0
+frostfire_dagger	KnifeGold_FrostFire	Frostfire Dagger	weapon	1	class=knife tier=4 durability=1600 damage=12.0 speed=2.0
+silver_knife	KnifeSilver	Silver Knife	weapon	1	class=knife tier=3 durability=800 damage=8.8 speed=2.0
+skoll_and_hati	KnifeSkollAndHati	Skoll and Hati	weapon	1	class=knife tier=4 durability=1000 damage=9.7 speed=2.0
+bronze_mace	MaceBronze	Bronze Mace	weapon	1	class=club tier=1 durability=800 damage=7.4 speed=1.2
+flametal_mace	MaceEldner	Flametal Mace	weapon	1	class=club tier=6 durability=1200 damage=10.8 speed=1.2
+bloodgeon	MaceEldnerBlood	Bloodgeon	weapon	1	class=club tier=6 durability=1200 damage=10.8 speed=1.2
+storm_star	MaceEldnerLightning	Storm Star	weapon	1	class=club tier=6 durability=1200 damage=10.9 speed=1.2
+klossen	MaceEldnerNature	Klossen	weapon	1	class=club tier=6 durability=1200 damage=10.9 speed=1.2
+nord_mace	MaceGold	Nord Mace	weapon	1	class=club tier=2 durability=1600 damage=11.3 speed=1.2
+thunderblood_mace	MaceGold_BloodLightning	Thunderblood Mace	weapon	1	class=club tier=2 durability=1600 damage=12.0 speed=1.2
+frostfire_mace	MaceGold_FrostFire	Frostfire Mace	weapon	1	class=club tier=2 durability=1600 damage=12.2 speed=1.2
+iron_mace	MaceIron	Iron Mace	weapon	1	class=club tier=2 durability=800 damage=8.5 speed=1.2
+porcupine	MaceNeedle	Porcupine	weapon	1	class=club tier=4 durability=600 damage=9.9 speed=1.2
+frostner	MaceSilver	Frostner	weapon	1	class=club tier=3 durability=800 damage=9.9 speed=1.2
+antler_pickaxe	PickaxeAntler	Antler Pickaxe	weapon	1	class=pickaxe tier=0 durability=400 damage=5.7 speed=1.0
+black_metal_pickaxe	PickaxeBlackMetal	Black Metal Pickaxe	weapon	1	class=pickaxe tier=3 durability=840 damage=8.2 speed=1.0
+bronze_pickaxe	PickaxeBronze	Bronze Pickaxe	weapon	1	class=pickaxe tier=1 durability=480 damage=6.5 speed=1.0
+iron_pickaxe	PickaxeIron	Iron Pickaxe	weapon	1	class=pickaxe tier=2 durability=600 damage=7.2 speed=1.0
+scythe	Scythe	Scythe	weapon	1	class=tool tier=0 durability=800 damage=1.0 speed=1.0
+snow_shovel	Shovel	Snow Shovel	weapon	1	class=shovel tier=0 durability=800 damage=1.0 speed=1.0
+demolisher	SledgeDemolisher	Demolisher	weapon	1	class=sledge tier=5 durability=1000 damage=10.9 speed=0.7
+nord_sledge	SledgeGold	Nord Sledge	weapon	1	class=sledge tier=5 durability=1600 damage=12.0 speed=0.7
+thunderblood_sledge	SledgeGold_BloodLightning	Thunderblood Sledge	weapon	1	class=sledge tier=5 durability=1600 damage=12.6 speed=0.7
+frostfire_sledge	SledgeGold_FrostFire	Frostfire Sledge	weapon	1	class=sledge tier=5 durability=1600 damage=12.8 speed=0.7
+iron_sledge	SledgeIron	Iron Sledge	weapon	1	class=sledge tier=2 durability=400 damage=8.5 speed=0.7
+stagbreaker	SledgeStagbreaker	Stagbreaker	weapon	1	class=sledge tier=0 durability=400 damage=6.5 speed=0.7
+bronze_spear	SpearBronze	Bronze Spear	weapon	1	class=spear tier=1 durability=400 damage=7.4 speed=1.4
+carapace_spear	SpearCarapace	Carapace Spear	weapon	1	class=spear tier=5 durability=1000 damage=10.4 speed=1.4
+abyssal_harpoon	SpearChitin	Abyssal Harpoon	weapon	1	class=spear tier=3 durability=200 damage=4.3 speed=1.4
+ancient_bark_spear	SpearElderbark	Ancient Bark Spear	weapon	1	class=spear tier=2 durability=400 damage=8.5 speed=1.4
+flint_spear	SpearFlint	Flint Spear	weapon	1	class=spear tier=0 durability=400 damage=6.0 speed=1.4
+nord_spear	SpearGold	Nord Spear	weapon	1	class=spear tier=5 durability=1600 damage=11.3 speed=1.4
+thunderblood_spear	SpearGold_BloodLightning	Thunderblood Spear	weapon	1	class=spear tier=5 durability=1600 damage=12.0 speed=1.4
+frostfire_spear	SpearGold_FrostFire	Frostfire Spear	weapon	1	class=spear tier=5 durability=1600 damage=12.3 speed=1.4
+splitnir	SpearSplitner	Splitnir	weapon	1	class=spear tier=5 durability=1200 damage=10.8 speed=1.4
+splitnir_the_bleeding	SpearSplitner_Blood	Splitnir the Bleeding	weapon	1	class=spear tier=5 durability=1200 damage=10.8 speed=1.4
+splitnir_the_storming	SpearSplitner_Lightning	Splitnir the Storming	weapon	1	class=spear tier=5 durability=1200 damage=10.9 speed=1.4
+splitnir_the_primal	SpearSplitner_Nature	Splitnir the Primal	weapon	1	class=spear tier=5 durability=1200 damage=10.9 speed=1.4
+fang_spear	SpearWolfFang	Fang Spear	weapon	1	class=spear tier=3 durability=400 damage=9.3 speed=1.4
+black_metal_sword	SwordBlackmetal	Black Metal Sword	weapon	1	class=sword tier=4 durability=800 damage=9.9 speed=1.6
+bronze_sword	SwordBronze	Bronze Sword	weapon	1	class=sword tier=1 durability=800 damage=7.4 speed=1.6
+dyrnwyn	SwordDyrnwyn	Dyrnwyn	weapon	1	class=sword tier=6 durability=1200 damage=11.1 speed=1.6
+nord_sword	SwordGold	Nord Sword	weapon	1	class=sword tier=6 durability=1600 damage=11.3 speed=1.6
+thunderblood_sword	SwordGold_BloodLightning	Thunderblood Sword	weapon	1	class=sword tier=6 durability=1600 damage=12.0 speed=1.6
+frostfire_sword	SwordGold_FrostFire	Frostfire Sword	weapon	1	class=sword tier=6 durability=1600 damage=12.2 speed=1.6
+iron_sword	SwordIron	Iron Sword	weapon	1	class=sword tier=2 durability=800 damage=8.5 speed=1.6
+mistwalker	SwordMistwalker	Mistwalker	weapon	1	class=sword tier=5 durability=1000 damage=10.4 speed=1.6
+nidhogg	SwordNiedhogg	Nidhögg	weapon	1	class=sword tier=6 durability=1200 damage=10.8 speed=1.6
+nidhogg_the_bleeding	SwordNiedhoggBlood	Nidhögg the Bleeding	weapon	1	class=sword tier=6 durability=1200 damage=10.8 speed=1.6
+nidhogg_the_thundering	SwordNiedhoggLightning	Nidhögg the Thundering	weapon	1	class=sword tier=6 durability=1200 damage=10.9 speed=1.6
+nidhogg_the_primal	SwordNiedhoggNature	Nidhögg the Primal	weapon	1	class=sword tier=6 durability=1200 damage=10.9 speed=1.6
+silver_sword	SwordSilver	Silver Sword	weapon	1	class=sword tier=3 durability=800 damage=10.1 speed=1.6
+wooden_sword	SwordWood	Wooden Sword	weapon	1	class=sword tier=1 durability=800 damage=1.0 speed=1.6
+nord_greatsword	THSwordGold	Nord Greatsword	weapon	1	class=greatsword tier=5 durability=1600 damage=11.9 speed=1.1
+thunderblood_greatsword	THSwordGold_BloodLightning	Thunderblood Greatsword	weapon	1	class=greatsword tier=5 durability=1600 damage=12.4 speed=1.1
+frostfire_greatsword	THSwordGold_FrostFire	Frostfire Greatsword	weapon	1	class=greatsword tier=5 durability=1600 damage=12.6 speed=1.1
+krom	THSwordKrom	Krom	weapon	1	class=greatsword tier=5 durability=1000 damage=11.0 speed=1.1
+slayer	THSwordSlayer	Slayer	weapon	1	class=greatsword tier=6 durability=1200 damage=11.3 speed=1.1
+brutal_slayer	THSwordSlayerBlood	Brutal Slayer	weapon	1	class=greatsword tier=6 durability=1200 damage=11.3 speed=1.1
+scourging_slayer	THSwordSlayerLightning	Scourging Slayer	weapon	1	class=greatsword tier=6 durability=1200 damage=11.5 speed=1.1
+primal_slayer	THSwordSlayerNature	Primal Slayer	weapon	1	class=greatsword tier=6 durability=1200 damage=11.5 speed=1.1

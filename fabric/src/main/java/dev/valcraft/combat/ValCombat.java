@@ -87,6 +87,10 @@ public final class ValCombat {
 		for (ValheimActorEntity proxy : PROXIES.values()) {
 			float[] hit = proxy.takeHit();
 			if (hit != null && (hit[0] > 0.0F || hit[3] > 0.0F)) {
+				int valheimWeapon = Float.floatToRawIntBits(hit[6]);
+				if (valheimWeapon != 0) {
+					ValLink.pushEvent(Proto.EV_HIT_WEAPON, valheimWeapon, hit[7], 0, 0, 0, 0);
+				}
 				ValLink.pushEvent(
 					Proto.EV_HIT_ACTOR, proxy.formId(), hit[0], hit[1], hit[2], hit[3], Float.floatToRawIntBits(hit[4]), Float.floatToRawIntBits(hit[5])
 				);

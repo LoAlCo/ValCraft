@@ -189,6 +189,9 @@ public final class ValLink {
 		public int teleportSeq;
 		public int viewportW, viewportH;
 		public float gameHour;
+		/** Valheim's [Camera] FOV for Minecraft's FOV option, applied when fovSeq changes. */
+		public float fovSetting;
+		public int fovSeq;
 
 		public boolean inGame() {
 			return (this.flags & VAL_IN_GAME) != 0;
@@ -274,6 +277,8 @@ public final class ValLink {
 			out.viewportW = s.get(JAVA_INT, b + SS_VIEWPORT_W);
 			out.viewportH = s.get(JAVA_INT, b + SS_VIEWPORT_H);
 			out.gameHour = s.get(JAVA_FLOAT, b + SS_GAME_HOUR);
+			out.fovSetting = s.get(JAVA_FLOAT, b + SS_FOV_SETTING);
+			out.fovSeq = s.get(JAVA_INT, b + SS_FOV_SEQ);
 			VarHandle.loadLoadFence();
 			int seq2 = (int) INT.getAcquire(s, b + SS_SEQ);
 			if (seq1 == seq2) {
@@ -314,6 +319,8 @@ public final class ValLink {
 		public float tickMs = 50.0F;
 		public int cameraMode;
 		public float cameraDistance;
+		public float optionsFov;
+		public int fovAck;
 	}
 
 	public static void writeMcState(McState st) {
@@ -358,6 +365,8 @@ public final class ValLink {
 		s.set(JAVA_FLOAT, b + MS_TICK_MS, st.tickMs);
 		s.set(JAVA_INT, b + MS_CAMERA_MODE, st.cameraMode);
 		s.set(JAVA_FLOAT, b + MS_CAMERA_DISTANCE, st.cameraDistance);
+		s.set(JAVA_FLOAT, b + MS_OPTIONS_FOV, st.optionsFov);
+		s.set(JAVA_INT, b + MS_FOV_ACK, st.fovAck);
 		INT.setRelease(s, b + MS_SEQ, seq + 2);
 	}
 

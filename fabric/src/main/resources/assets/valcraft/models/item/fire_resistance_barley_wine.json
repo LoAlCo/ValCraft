@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "valcraft:item/fire_resistance_barley_wine"
+  }
+}

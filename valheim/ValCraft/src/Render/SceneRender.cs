@@ -145,6 +145,12 @@ namespace ValCraft.Render
         public static void Frame()
         {
             if (_viewModel != null && _viewModel.go && (!Puppet.Puppeting || Puppet.Mc.cameraMode != 0)) _viewModel.renderer.enabled = false;
+            if (_viewModel != null && _viewModel.go)
+            {
+                // drawn as at the viewmodel FOV, whatever the scene's FOV ([Camera], CameraSettings)
+                float k = ViewModelScale * CameraSettings.ViewmodelScale(Puppet.FovDeg);
+                _viewModel.go.transform.localScale = new Vector3(k, k, -ViewModelScale);
+            }
             // The hands' draw mode follows HandOcclusion becoming usable, even while no new hands arrive.
             bool usable = HandOcclusion.Usable;
             if (usable != _wasUsable) { _wasUsable = usable; ApplyViewModelMode(); }

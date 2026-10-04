@@ -146,6 +146,8 @@ namespace ValCraft.Link
         public uint teleportSeq;
         public uint viewportW, viewportH;
         public float gameHour;
+        public float fovSetting;  // ValCraft: [Camera] FOV for Minecraft's FOV option
+        public uint fovSeq;       // bumps when it changes
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -175,6 +177,8 @@ namespace ValCraft.Link
         public uint tickPad;
         public uint cameraMode;
         public float cameraDistance;
+        public float optionsFov;  // ValCraft: Minecraft's FOV option
+        public uint fovAck;       // the last ValState.fovSeq Minecraft applied
     }
 
     [StructLayout(LayoutKind.Sequential)]

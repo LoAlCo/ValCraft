@@ -89,8 +89,11 @@ namespace valcraft::proto
 		std::uint32_t teleportSeq;       // MC teleports its player to pos when this changes
 		std::uint32_t viewportW, viewportH;
 		float         gameHour;
+		// ValCraft: Valheim's [Camera] FOV for Minecraft's FOV option, applied when fovSeq changes
+		float         fovSetting;
+		std::uint32_t fovSeq;
 	};
-	static_assert(sizeof(ValState) == 0x40);
+	static_assert(sizeof(ValState) == 0x48);
 
 	// ---- MC -> Valheim state @0x200 (seqlock) ------------------------------------------------
 	enum McFlags : std::uint32_t
@@ -143,8 +146,13 @@ namespace valcraft::proto
 		// the eye, after its own zoom collision (Minecraft blocks and Valheim's triangles).
 		std::uint32_t cameraMode;
 		float         cameraDistance;
+
+		// ValCraft: Minecraft's FOV option, and the last ValState::fovSeq it applied (so Valheim can
+		// tell the player changing it in Minecraft's options from its own change on the way)
+		float         optionsFov;
+		std::uint32_t fovAck;
 	};
-	static_assert(sizeof(McState) == 0xC8);
+	static_assert(sizeof(McState) == 0xD0);
 	static_assert(sizeof(McState) <= 0x100);
 
 	// ---- overlay triple buffer @0x300 --------------------------------------------------------
@@ -258,7 +266,7 @@ namespace valcraft::proto
 		kEvSkillUse = 5,    // the player used a Valheim skill in Minecraft: formId = Valheim skill (ActorValue: 9 Block,
 		                    // 10 Smithing, 11 Heavy Armor, 12 Light Armor), a = uses (as Valheim's AdvanceSkill counts them)
 		kEvValheimHit = 6,  // a swing at Valheim's world: formId = tool (ToolKind | tier << 4), a/b/c = hit point (MC coords), d = attack strength 0..1
-		// ValCraft: 7 build sync, 9 set time (a = hour 0-24, b = extra days); see Proto.java
+		// ValCraft: 7 build sync, 9 set time (a = hour 0-24, b = extra days), 10 consume (formId = prefab name hash), 11 hit weapon (before a hit: formId = Valheim weapon prefab hash, a = its MC damage); see Proto.java
 	};
 
 	enum ToolKind : std::uint32_t

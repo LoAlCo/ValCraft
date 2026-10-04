@@ -11,6 +11,12 @@ public final class ValCraftClient implements ClientModInitializer {
 	public void onInitializeClient() {
 		dev.valcraft.link.ValLink.announceRunning();
 		DiscordPresence.start();
+		// Optional (Options, Resource Packs): Valheim's weapons as blocky 3D models in the hand and on the ground.
+		net.fabricmc.fabric.api.resource.v1.ResourceLoader.registerBuiltinPack(
+			net.minecraft.resources.Identifier.fromNamespaceAndPath("valcraft", "valcraft_3d_weapons"),
+			net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer("valcraft").orElseThrow(),
+			net.minecraft.network.chat.Component.literal("ValCraft 3D Weapons"),
+			net.fabricmc.fabric.api.resource.v1.pack.PackActivationType.NORMAL);
 		// Multiplayer without editing files: the host opens their world to LAN (O, Open to LAN) and
 		// e4mc gives them a link; friends type /join <link> in chat, and /leave to come back.
 		net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback.EVENT.register((dispatcher, context) -> {

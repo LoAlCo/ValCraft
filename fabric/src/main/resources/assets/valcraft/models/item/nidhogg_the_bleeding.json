@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "valcraft:item/nidhogg_the_bleeding"
+  }
+}

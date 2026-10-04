@@ -25,6 +25,26 @@ public final class ValClient {
 	private static boolean startedHidden;
 
 	private static final ValLink.ValState sky = new ValLink.ValState();
+	/** The last ValState.fovSeq whose [Camera] FOV was put into Minecraft's FOV option. */
+	private static int fovApplied;
+
+	/**
+	 * Valheim's [Camera] FOV is Minecraft's FOV option: when it changes in Valheim's config it's set
+	 * here (and saved); when the player changes it in Minecraft's options, Valheim's config follows
+	 * (it sees optionsFov, once fovAck says its own change has arrived).
+	 */
+	private static void applyFov(Minecraft minecraft) {
+		if (sky.fovSeq == fovApplied || sky.fovSetting < 1.0F) {
+			return;
+		}
+		fovApplied = sky.fovSeq;
+		int fov = Math.max(30, Math.min(110, Math.round(sky.fovSetting)));
+		if (minecraft.options.fov().get() != fov) {
+			minecraft.options.fov().set(fov);
+			minecraft.options.save();
+			ValCraft.LOG.info("ValCraft: FOV {} from Valheim's config", fov);
+		}
+	}
 	private static final ValLink.McState mc = new ValLink.McState();
 	private static volatile boolean linked;
 	private static boolean tookOver;
@@ -90,6 +110,7 @@ public final class ValClient {
 		boolean nowLinked = ValLink.active();
 		if (nowLinked) {
 			ValLink.readValState(sky); // on a torn read we simply keep last frame's state
+			applyFov(Minecraft.getInstance());
 			dev.valcraft.world.ValWater.refresh();
 		} else {
 			dev.valcraft.world.ValWater.clear();
@@ -511,6 +532,8 @@ public final class ValClient {
 			// Minecraft's F5 camera: Valheim puts its camera where Minecraft's would be.
 			mc.cameraMode = minecraft.options.getCameraType().ordinal();
 			mc.cameraDistance = camera.isDetached() ? (float) camera.position().distanceTo(player.getEyePosition(partial)) : 0.0F;
+			mc.optionsFov = minecraft.options.fov().get();
+			mc.fovAck = fovApplied;
 			// Walk bob, exactly what GameRenderer.bobView() uses this frame.
 			var entityState = minecraft.gameRenderer.gameRenderState().levelRenderState.cameraRenderState.entityRenderState;
 			boolean bob = minecraft.options.bobView().get() && entityState.isPlayer;

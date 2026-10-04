@@ -81,6 +81,10 @@ public final class Proto {
 	public static final int EV_BUILD_SYNC = 7;
 	/** TimeSync: a /time command; a = hour of day (0-24, Valheim's), b = whole days to skip besides. */
 	public static final int EV_SET_TIME = 9;
+	/** ValheimItems: drank a Valheim mead; formId = its Valheim prefab name's String.hashCode(). */
+	public static final int EV_CONSUME = 10;
+	/** Just before an EV_HIT_ACTOR made with a ValCraft Valheim weapon: formId = its prefab's hash, a = its Minecraft damage. */
+	public static final int EV_HIT_WEAPON = 11;
 	public static final int TOOL_NONE = 0, TOOL_SWORD = 1, TOOL_AXE = 2, TOOL_PICKAXE = 3, TOOL_SHOVEL = 4, TOOL_HOE = 5;
 	// Valheim skills (ActorValue) Minecraft reports use of; weapon skills come from EV_HIT_ACTOR.
 	public static final int SKILL_BLOCK = 9;
@@ -165,6 +169,8 @@ public final class Proto {
 	public static final long SS_VIEWPORT_W = 0x34;
 	public static final long SS_VIEWPORT_H = 0x38;
 	public static final long SS_GAME_HOUR = 0x3C;
+	public static final long SS_FOV_SETTING = 0x40;
+	public static final long SS_FOV_SEQ = 0x44;
 
 	public static final int VAL_IN_GAME = 1;
 	public static final int VAL_MENU_OPEN = 1 << 1;
@@ -210,6 +216,8 @@ public final class Proto {
 	public static final long MS_TICK_MS = 0xB8;
 	public static final long MS_CAMERA_MODE = 0xC0;
 	public static final long MS_CAMERA_DISTANCE = 0xC4;
+	public static final long MS_OPTIONS_FOV = 0xC8;
+	public static final long MS_FOV_ACK = 0xCC;
 
 	public static final int MC_IN_WORLD = 1;
 	public static final int MC_SCREEN_OPEN = 1 << 1;

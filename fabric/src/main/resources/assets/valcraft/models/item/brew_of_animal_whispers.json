@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "valcraft:item/brew_of_animal_whispers"
+  }
+}

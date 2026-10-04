@@ -1,0 +1,8 @@
+{
+  "pack": {
+    "description": "ValCraft: Valheim's weapons as 3D models",
+    "pack_format": 97,
+    "min_format": 97,
+    "max_format": 999
+  }
+}

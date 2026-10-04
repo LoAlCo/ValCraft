@@ -146,7 +146,8 @@ TrophyFader = valcraft:fader_trophy
         };
 
         // Blocks added to the loot table over time: appended once to older tables (see Load).
-        static readonly (string marker, string lines)[] Additions = { (BuildingMaterialsMarker, BuildingMaterials), (BossItemsMarker, BossItems), (BossDropsMarker, BossDrops) };
+        static readonly (string marker, string lines)[] Additions = System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Concat(
+            new[] { (BuildingMaterialsMarker, BuildingMaterials), (BossItemsMarker, BossItems), (BossDropsMarker, BossDrops) }, ValheimItemsLoot.Blocks));
 
         // Added in 0.5.3 for Valheim building (the Build Hammer): its costs are paid in these, and
         // picking them up in Valheim gives them. Appended once to older loot tables (see Load).
@@ -185,9 +186,8 @@ AskHide = minecraft:rabbit_hide
             try
             {
                 if (!File.Exists(_path)) File.WriteAllText(_path, Defaults);
-                else
                 {
-                    // An older table: add newer blocks once, without touching the user's lines (any item
+                    // A new or older table: add the blocks it's missing once, without touching the user's lines (any item
                     // already listed keeps its line: a later one for the same item would win, so skip those).
                     string text = File.ReadAllText(_path);
                     var have = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
