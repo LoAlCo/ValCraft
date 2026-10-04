@@ -100,7 +100,7 @@ Holding a Minecraft hoe or the **Build Hammer** (Valheim's build mode):
 
 ### Settings
 
-In `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor, or in game with the optional ConfigurationManager, see Controls):
+In game: **ValCraft settings** in Valheim's pause menu (Esc) changes them on the spot, and its **Minecraft options** button opens Minecraft's own options. They're also in `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor, or the optional ConfigurationManager, see Controls):
 
 | Setting | Does |
 |---|---|
