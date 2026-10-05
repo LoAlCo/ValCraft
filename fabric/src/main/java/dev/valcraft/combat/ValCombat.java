@@ -57,6 +57,14 @@ public final class ValCombat {
 
 	private static final Map<Integer, ValheimActorEntity> PROXIES = new HashMap<>();
 	private static final List<ValLink.Actor> ACTORS = new ArrayList<>();
+	// Multiplayer: the creatures around each guest (their Valheim's table, via ValNet.Actors), and
+	// when it came. A Valheim creature has the same form id on every machine (from its ZDOID).
+	private static final Map<java.util.UUID, List<ValLink.Actor>> GUEST_ACTORS = new HashMap<>();
+	private static final Map<java.util.UUID, Long> GUEST_ACTORS_AT = new HashMap<>();
+	// Whose Valheim told us about each stand-in (null: the host's): mobs' hits go there.
+	private static final Map<Integer, java.util.UUID> OWNER = new HashMap<>();
+	private static final List<ValLink.Actor> HOST_ACTORS = new ArrayList<>();
+	private static final long GUEST_ACTORS_STALE_MS = 1500;
 
 	private ValCombat() {
 	}
@@ -80,30 +88,67 @@ public final class ValCombat {
 		for (ServerPlayer player : players) {
 			pickUpNearby(player);
 		}
-		if (ValLink.readActors(ACTORS)) {
-			sync(level);
+		boolean fresh = ValLink.readActors(ACTORS);
+		if (fresh) {
+			HOST_ACTORS.clear();
+			HOST_ACTORS.addAll(ACTORS);
 		}
-		// Hits land during the tick (melee, sweeps, arrows, fire); send one combined hit per actor.
+		if (fresh || !GUEST_ACTORS.isEmpty()) {
+			sync(level, server);
+		}
+		// Hits land during the tick (melee, sweeps, arrows, fire); send one combined hit per actor,
+		// to the Valheim of the player who landed it (or, for a mob's, the one that sees the creature).
 		for (ValheimActorEntity proxy : PROXIES.values()) {
+			java.util.UUID by = proxy.hitBy();
 			float[] hit = proxy.takeHit();
 			if (hit != null && (hit[0] > 0.0F || hit[3] > 0.0F)) {
+				ServerPlayer to = server.getPlayerList().getPlayer(by != null ? by : OWNER.getOrDefault(proxy.formId(), NOBODY));
 				int valheimWeapon = Float.floatToRawIntBits(hit[6]);
 				if (valheimWeapon != 0) {
-					ValLink.pushEvent(Proto.EV_HIT_WEAPON, valheimWeapon, hit[7], 0, 0, 0, 0);
+					dev.valcraft.net.ValNet.pushEvent(to, Proto.EV_HIT_WEAPON, valheimWeapon, hit[7], 0, 0, 0, 0);
 				}
-				ValLink.pushEvent(
+				dev.valcraft.net.ValNet.pushEvent(to,
 					Proto.EV_HIT_ACTOR, proxy.formId(), hit[0], hit[1], hit[2], hit[3], Float.floatToRawIntBits(hit[4]), Float.floatToRawIntBits(hit[5])
 				);
-				ValCraft.LOG.info("ValCraft: hit {} for {} (knockback {})", proxy.getName().getString(), hit[0], hit[3]);
+				ValCraft.LOG.info("ValCraft: hit {} for {} (knockback {}){}", proxy.getName().getString(), hit[0], hit[3],
+					to != null && !dev.valcraft.net.ValNet.isHost(to) ? " by guest " + to.getPlainTextName() : "");
 			}
 		}
 	}
 
-	private static void sync(ServerLevel level) {
+	private static final java.util.UUID NOBODY = new java.util.UUID(0L, 0L);
+
+	/** Multiplayer: a guest's Valheim's creatures (ValNet.Actors). Server thread. */
+	public static void guestActors(java.util.UUID guest, List<ValLink.Actor> actors) {
+		GUEST_ACTORS.put(guest, actors);
+		GUEST_ACTORS_AT.put(guest, System.currentTimeMillis());
+	}
+
+	private static void sync(ServerLevel level, MinecraftServer server) {
 		Map<Integer, ValLink.Actor> live = new HashMap<>();
-		for (ValLink.Actor a : ACTORS) {
+		OWNER.clear();
+		long now = System.currentTimeMillis();
+		for (var it = GUEST_ACTORS.entrySet().iterator(); it.hasNext(); ) {
+			var e = it.next();
+			if (now - GUEST_ACTORS_AT.getOrDefault(e.getKey(), 0L) > GUEST_ACTORS_STALE_MS || server.getPlayerList().getPlayer(e.getKey()) == null) {
+				GUEST_ACTORS_AT.remove(e.getKey());
+				it.remove();
+				continue;
+			}
+			for (ValLink.Actor a : e.getValue()) {
+				if (!a.dead()) {
+					live.put(a.formId(), a);
+					OWNER.put(a.formId(), e.getKey());
+				}
+			}
+		}
+		// The host's own view wins where both see a creature (it's what the host's screen shows).
+		for (ValLink.Actor a : HOST_ACTORS) {
 			if (!a.dead()) {
 				live.put(a.formId(), a);
+				OWNER.remove(a.formId());
+			} else {
+				live.remove(a.formId());
 			}
 		}
 		for (Iterator<Map.Entry<Integer, ValheimActorEntity>> it = PROXIES.entrySet().iterator(); it.hasNext(); ) {
@@ -223,14 +268,14 @@ public final class ValCombat {
 	/**
 	 * Valheim skills for taking a hit: Block when the shield caught it, otherwise Light or Heavy
 	 * Armor by what the player mostly wears (leather, chainmail, gold, copper and turtle count as
-	 * light; iron, diamond and netherite as heavy). Only the host's own Valheim is told.
+	 * light; iron, diamond and netherite as heavy). The player's own Valheim is told.
 	 */
 	private static void trainDefence(ServerPlayer player, float damage, boolean blocked) {
-		if (!dev.valcraft.net.ValNet.isHost(player) || damage <= 0.0F) {
+		if (damage <= 0.0F) {
 			return;
 		}
 		if (blocked) {
-			ValLink.pushEvent(Proto.EV_SKILL_USE, Proto.SKILL_BLOCK, damage, 0.0F, 0.0F, 0.0F, 0);
+			dev.valcraft.net.ValNet.pushEvent(player, Proto.EV_SKILL_USE, Proto.SKILL_BLOCK, damage, 0.0F, 0.0F, 0.0F, 0);
 			return;
 		}
 		int light = 0, heavy = 0;
@@ -248,7 +293,7 @@ public final class ValCombat {
 			}
 		}
 		if (light + heavy > 0) {
-			ValLink.pushEvent(Proto.EV_SKILL_USE, heavy > light ? Proto.SKILL_HEAVY_ARMOR : Proto.SKILL_LIGHT_ARMOR, damage * (light + heavy) / 4.0F, 0.0F, 0.0F,
+			dev.valcraft.net.ValNet.pushEvent(player, Proto.EV_SKILL_USE, heavy > light ? Proto.SKILL_HEAVY_ARMOR : Proto.SKILL_LIGHT_ARMOR, damage * (light + heavy) / 4.0F, 0.0F, 0.0F,
 				0.0F, 0);
 		}
 	}

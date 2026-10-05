@@ -41,6 +41,8 @@ public class ValheimActorEntity extends LivingEntity {
 	private double pushX, pushZ;
 	private float pushStrength;
 	private boolean hitThisTick;
+	/** The player whose hit this tick is (their own Valheim applies it), or null for mobs. */
+	private java.util.@Nullable UUID pendingAttacker;
 	/** Hostile to the player in Valheim: Minecraft's monsters and iron golems go after it. */
 	private boolean hostile;
 
@@ -123,6 +125,9 @@ public class ValheimActorEntity extends LivingEntity {
 		if (!(source.getEntity() instanceof net.minecraft.world.entity.player.Player)) {
 			this.pendingFlags |= Proto.HIT_MOB;
 		}
+		if (source.getEntity() instanceof net.minecraft.server.level.ServerPlayer attacker) {
+			this.pendingAttacker = attacker.getUUID();
+		}
 		this.hitThisTick = true;
 		this.getCombatTracker().recordDamage(source, dmg);
 	}
@@ -175,6 +180,11 @@ public class ValheimActorEntity extends LivingEntity {
 		return Proto.WEAPON_BLUNT;
 	}
 
+	/** Who landed this tick's hit (call before takeHit): a player, or null (a mob, fire, ...). */
+	public java.util.@Nullable UUID hitBy() {
+		return this.pendingAttacker;
+	}
+
 	/** Returns this tick's hit (damage, flags, push, weapon) and clears it; null if nothing hit us. */
 	public float[] takeHit() {
 		if (!this.hitThisTick) {
@@ -189,6 +199,7 @@ public class ValheimActorEntity extends LivingEntity {
 		this.pushX = this.pushZ = 0.0;
 		this.pushStrength = 0.0F;
 		this.hitThisTick = false;
+		this.pendingAttacker = null;
 		return hit;
 	}
 

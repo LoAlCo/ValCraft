@@ -171,6 +171,12 @@ public final class Proto {
 	public static final long SS_GAME_HOUR = 0x3C;
 	public static final long SS_FOV_SETTING = 0x40;
 	public static final long SS_FOV_SEQ = 0x44;
+	public static final long SS_MP_MODE = 0x48;
+	public static final long SS_MP_SEQ = 0x4C;
+	public static final long SS_MP_LINK = 0x50;
+	public static final int MP_LINK_BYTES = 64;
+	/** ValState.mpMode: our own world; our own, opened to friends; a friend's (at mpLink). */
+	public static final int MP_OWN = 0, MP_HOST = 1, MP_JOIN = 2;
 
 	public static final int VAL_IN_GAME = 1;
 	public static final int VAL_MENU_OPEN = 1 << 1;
@@ -218,6 +224,11 @@ public final class Proto {
 	public static final long MS_CAMERA_DISTANCE = 0xC4;
 	public static final long MS_OPTIONS_FOV = 0xC8;
 	public static final long MS_FOV_ACK = 0xCC;
+	public static final long MS_MP_STATE = 0xD0;
+	public static final long MS_MP_LINK = 0xD4;
+	public static final int MS_MP_LINK_BYTES = 44;
+	/** McState.mpState: our world is open to friends at mpLink; we're in a friend's world. */
+	public static final int MP_PUBLISHED = 1, MP_IN_FRIEND_WORLD = 2;
 
 	public static final int MC_IN_WORLD = 1;
 	public static final int MC_SCREEN_OPEN = 1 << 1;

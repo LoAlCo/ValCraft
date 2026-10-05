@@ -35,6 +35,7 @@ public final class ValCraftClient implements ClientModInitializer {
 			}));
 		});
 		ClientTickEvents.END_CLIENT_TICK.register(ValClient::clientTick);
+		GuestLink.install();
 		// Multiplayer testing on one PC: VALCRAFT_LAN_PORT opens the world to LAN on that port as soon
 		// as it's loaded, and VALCRAFT_LAN_OFFLINE lets offline (dev) clients join it.
 		net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN.register((handler, sender, minecraft) -> {

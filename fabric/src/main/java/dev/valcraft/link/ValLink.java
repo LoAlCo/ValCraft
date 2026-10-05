@@ -192,6 +192,9 @@ public final class ValLink {
 		/** Valheim's [Camera] FOV for Minecraft's FOV option, applied when fovSeq changes. */
 		public float fovSetting;
 		public int fovSeq;
+		/** Multiplayer: Proto.MP_OWN / MP_HOST / MP_JOIN, and the friend's world for MP_JOIN. */
+		public int mpMode, mpSeq;
+		public String mpLink = "";
 
 		public boolean inGame() {
 			return (this.flags & VAL_IN_GAME) != 0;
@@ -279,6 +282,12 @@ public final class ValLink {
 			out.gameHour = s.get(JAVA_FLOAT, b + SS_GAME_HOUR);
 			out.fovSetting = s.get(JAVA_FLOAT, b + SS_FOV_SETTING);
 			out.fovSeq = s.get(JAVA_INT, b + SS_FOV_SEQ);
+			out.mpMode = s.get(JAVA_INT, b + SS_MP_MODE);
+			int mpSeq = s.get(JAVA_INT, b + SS_MP_SEQ);
+			if (mpSeq != out.mpSeq || out.mpLink == null) {
+				out.mpLink = readString(s, b + SS_MP_LINK, MP_LINK_BYTES);
+			}
+			out.mpSeq = mpSeq;
 			VarHandle.loadLoadFence();
 			int seq2 = (int) INT.getAcquire(s, b + SS_SEQ);
 			if (seq1 == seq2) {
@@ -321,6 +330,30 @@ public final class ValLink {
 		public float cameraDistance;
 		public float optionsFov;
 		public int fovAck;
+		/** Multiplayer: Proto.MP_PUBLISHED / MP_IN_FRIEND_WORLD, and our world's link while published. */
+		public int mpState;
+		public String mpLink = "";
+	}
+
+	private static String readString(MemorySegment s, long at, int max) {
+		byte[] bytes = new byte[max];
+		int n = 0;
+		while (n < max - 1) {
+			byte c = s.get(JAVA_BYTE, at + n);
+			if (c == 0) {
+				break;
+			}
+			bytes[n++] = c;
+		}
+		return new String(bytes, 0, n, java.nio.charset.StandardCharsets.UTF_8);
+	}
+
+	private static void writeString(MemorySegment s, long at, int max, String value) {
+		byte[] bytes = value == null ? new byte[0] : value.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+		int n = Math.min(bytes.length, max - 1);
+		for (int i = 0; i < max; i++) {
+			s.set(JAVA_BYTE, at + i, i < n ? bytes[i] : 0);
+		}
 	}
 
 	public static void writeMcState(McState st) {
@@ -367,6 +400,8 @@ public final class ValLink {
 		s.set(JAVA_FLOAT, b + MS_CAMERA_DISTANCE, st.cameraDistance);
 		s.set(JAVA_FLOAT, b + MS_OPTIONS_FOV, st.optionsFov);
 		s.set(JAVA_INT, b + MS_FOV_ACK, st.fovAck);
+		s.set(JAVA_INT, b + MS_MP_STATE, st.mpState);
+		writeString(s, b + MS_MP_LINK, MS_MP_LINK_BYTES, st.mpLink);
 		INT.setRelease(s, b + MS_SEQ, seq + 2);
 	}
 

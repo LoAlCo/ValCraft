@@ -25,6 +25,8 @@ public abstract class ServerExplosionMixin {
 		ServerExplosion self = (ServerExplosion) (Object) this;
 		var center = self.center();
 		int flags = self.getBlockInteraction() == Explosion.BlockInteraction.KEEP ? Proto.EXPLOSION_KEEPS_BLOCKS : 0;
-		ValLink.pushEvent(Proto.EV_EXPLOSION, 0, (float) center.x, (float) center.y, (float) center.z, self.radius(), flags);
+		// The nearest player's Valheim has the ground and creatures there (just one: it hurts and digs once).
+		dev.valcraft.net.ValNet.pushEventNearest(self.level(), center.x, center.y, center.z, Proto.EV_EXPLOSION, 0, (float) center.x, (float) center.y,
+			(float) center.z, self.radius(), flags);
 	}
 }

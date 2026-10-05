@@ -56,6 +56,9 @@ namespace ValCraft.Link
         public const uint McHoldingHoe = 1u << 10;     // ValCraft: a hoe / the Build Hammer in the main hand (BuildTools)
         public const uint McCreative = 1u << 11;       // creative mode: building costs nothing
         public const uint McHoldingHammer = 1u << 12;
+        // ValCraft multiplayer (ValState.mpMode, McState.mpState)
+        public const uint MpOwn = 0, MpHost = 1, MpJoin = 2;
+        public const uint MpPublished = 1u << 0, MpInFriendWorld = 1u << 1;
 
         // overlay triple buffer
         public const uint OverlayDirty = 1u << 2;
@@ -135,7 +138,7 @@ namespace ValCraft.Link
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct ValState
+    public unsafe struct ValState
     {
         public uint seq;
         public uint flags;
@@ -148,10 +151,13 @@ namespace ValCraft.Link
         public float gameHour;
         public float fovSetting;  // ValCraft: [Camera] FOV for Minecraft's FOV option
         public uint fovSeq;       // bumps when it changes
+        public uint mpMode;       // ValCraft multiplayer: MpOwn / MpHost / MpJoin (Multiplayer.cs)
+        public uint mpSeq;        // bumps when mpMode or mpLink changes
+        public fixed byte mpLink[64];  // UTF-8, NUL-terminated: the friend's world to join
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct McState
+    public unsafe struct McState
     {
         public uint seq;
         public uint flags;
@@ -179,6 +185,8 @@ namespace ValCraft.Link
         public float cameraDistance;
         public float optionsFov;  // ValCraft: Minecraft's FOV option
         public uint fovAck;       // the last ValState.fovSeq Minecraft applied
+        public uint mpState;      // MpPublished | MpInFriendWorld
+        public fixed byte mpLink[44];  // UTF-8, NUL-terminated: the link friends join our world by
     }
 
     [StructLayout(LayoutKind.Sequential)]

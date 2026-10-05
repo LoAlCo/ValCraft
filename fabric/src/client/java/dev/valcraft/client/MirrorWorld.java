@@ -125,6 +125,12 @@ public final class MirrorWorld {
 		return server != null ? server.ip : null;
 	}
 
+	/** True while connecting to a friend's world (not in it yet). */
+	public static boolean joining() {
+		Minecraft minecraft = Minecraft.getInstance();
+		return sessionJoin != null && attempted && minecraft.level == null;
+	}
+
 	/** /leave: back to our own world. */
 	public static void leaveFriend(Minecraft minecraft) {
 		if (sessionJoin == null) {

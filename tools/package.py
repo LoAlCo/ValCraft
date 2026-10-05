@@ -36,6 +36,10 @@ PRISM_LICENSE_URL = f"https://raw.githubusercontent.com/PrismLauncher/PrismLaunc
 FABRIC_API_JAR = "fabric-api-0.161.0+26.3.jar"
 FABRIC_API_URL = "https://cdn.modrinth.com/data/P7dR8mSH/versions/bNnaTiuM/fabric-api-0.161.0%2B26.3.jar"
 FABRIC_API_SHA512 = "ed6b2586d6fde11fde8472f5a527c51e99b67026e46f94d4bfd85e7e28ce5ee299173ee16ad576ceb51f39f98d30a811086a6deb1a86a524859cc16e12da109d"
+# e4mc (MIT): "Open to LAN" gets a link friends join over the internet; ValCraft's multiplayer uses it.
+E4MC_JAR = "e4mc-fabric-6.2.2-modern.jar"
+E4MC_URL = "https://cdn.modrinth.com/data/qANg5Jrr/versions/AouleFRY/e4mc-fabric-6.2.2-modern.jar"
+E4MC_SHA512 = "01ef0a8c5b76e2cb0effd337bad3350d8807d100d0ec661e01b2ffb20af7b652f756c5eaa11bee233c37905bfd7b573f7a85f3d15bfd2833962c76f02cd59a86"
 
 
 def version():
@@ -124,6 +128,7 @@ def main():
             raise SystemExit(f"missing {f} (build first, or drop --no-build)")
     prism = pinned(PRISM_URL, PRISM_ZIP, "sha256", PRISM_SHA256)
     fabric_api = pinned(FABRIC_API_URL, FABRIC_API_JAR, "sha512", FABRIC_API_SHA512)
+    e4mc = pinned(E4MC_URL, E4MC_JAR, "sha512", E4MC_SHA512)
     prism_license = pinned(PRISM_LICENSE_URL, f"PrismLauncher-{PRISM_VERSION}-LICENSE.txt")
 
     if os.path.isdir(DIST):
@@ -141,8 +146,9 @@ def main():
     mods = os.path.join(bundle, "Prism", "instances", "ValCraft", ".minecraft", "mods")
     os.makedirs(mods)
     shutil.copy(fabric_api, mods)
+    shutil.copy(e4mc, mods)
     shutil.copy(jar, os.path.join(mods, f"valcraft-{ver}.jar"))
-    open(os.path.join(bundle, "bundle-version.txt"), "w").write(f"ValCraft {ver}, Prism Launcher {PRISM_VERSION}, {FABRIC_API_JAR}")
+    open(os.path.join(bundle, "bundle-version.txt"), "w").write(f"ValCraft {ver}, Prism Launcher {PRISM_VERSION}, {FABRIC_API_JAR}, {E4MC_JAR}")
     mc_zip = os.path.join(DIST, "ValCraft-Minecraft.zip")
     zip_folder(mc_zip, bundle)
     shutil.rmtree(bundle)

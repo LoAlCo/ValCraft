@@ -17,6 +17,7 @@
     "FlowingFluidMixin",
     "GoalUtilsValheimMixin",
     "ItemMixin",
+    "GuestMovementMixin",
     "MinecraftServerFlightMixin",
     "MobValheimTargetMixin",
     "PathfindingValheimMixin",

@@ -119,7 +119,7 @@ namespace ValCraft
                 foreach (var f in Directory.GetFiles(mods))
                 {
                     string n = Path.GetFileName(f);
-                    if (n.StartsWith("valcraft-") || n.StartsWith("fabric-api-")) File.Delete(f);
+                    if (n.StartsWith("valcraft-") || n.StartsWith("fabric-api-") || n.StartsWith("e4mc-")) File.Delete(f);
                 }
             string copy = Path.Combine(dir, "bundle.zip");
             File.Copy(Bundle, copy, true);

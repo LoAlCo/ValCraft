@@ -51,6 +51,11 @@ public final class DiscordPresence {
 		thread.start();
 	}
 
+	/** Our world's e4mc link while it's open to LAN (or null). */
+	public static @Nullable String hostLink() {
+		return hostLink;
+	}
+
 	/** Every chat line (ChatComponentMixin): e4mc's "Local game hosted on domain [...]" gives the link. */
 	public static void onChat(Component message) {
 		String link = findLink(message);

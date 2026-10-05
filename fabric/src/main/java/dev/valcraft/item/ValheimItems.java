@@ -86,14 +86,13 @@ public final class ValheimItems {
 
 		@Override
 		public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity entity) {
-			if (!level.isClientSide() && entity instanceof ServerPlayer) {
+			if (!level.isClientSide() && entity instanceof ServerPlayer player) {
 				if (this.curePoison) {
 					entity.removeEffect(MobEffects.POISON);
 					entity.removeEffect(MobEffects.WITHER);
 				}
-				if (ValLink.active()) {
-					ValLink.pushEvent(Proto.EV_CONSUME, this.prefab.hashCode(), 0, 0, 0, 0, 0);
-				}
+				// The drinker's own Valheim gives their Viking the mead's effect.
+				dev.valcraft.net.ValNet.pushEvent(player, Proto.EV_CONSUME, this.prefab.hashCode(), 0, 0, 0, 0, 0);
 			}
 			return super.finishUsingItem(stack, level, entity);
 		}

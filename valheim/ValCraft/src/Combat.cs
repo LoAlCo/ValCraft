@@ -94,6 +94,7 @@ namespace ValCraft
                 foreach (var c in Character.GetAllCharacters())
                 {
                     if (!c || c == player || c.GetZDOID().IsNone()) continue;
+                    if (Multiplayer.SharesWorld(c)) continue;  // in our Minecraft world: their Minecraft player is what gets hit
                     float d = (c.transform.position - me).sqrMagnitude;
                     if (d < range * range) _near.Add((d, c));
                 }

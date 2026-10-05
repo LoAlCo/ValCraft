@@ -25,14 +25,14 @@ public abstract class SmithingMixin {
 	@Inject(method = "onCraftedBy", at = @At("HEAD"))
 	private void valcraft$trainSmithing(Player player, int craftCount, CallbackInfo ci) {
 		ItemStack stack = (ItemStack) (Object) this;
-		if (!(player instanceof ServerPlayer serverPlayer) || !ValNet.isHost(serverPlayer) || craftCount <= 0) {
+		if (!(player instanceof ServerPlayer serverPlayer) || craftCount <= 0) {
 			return;
 		}
 		if (!stack.has(DataComponents.EQUIPPABLE) && !stack.has(DataComponents.TOOL) && !stack.has(DataComponents.WEAPON) && !stack.is(Items.BOW)
 			&& !stack.is(Items.CROSSBOW)) {
 			return;
 		}
-		ValLink.pushEvent(Proto.EV_SKILL_USE, Proto.SKILL_SMITHING, valcraft$worth(stack) * craftCount, 0.0F, 0.0F, 0.0F, 0);
+		ValNet.pushEvent(serverPlayer, Proto.EV_SKILL_USE, Proto.SKILL_SMITHING, valcraft$worth(stack) * craftCount, 0.0F, 0.0F, 0.0F, 0);
 	}
 
 	@Unique

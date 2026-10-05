@@ -96,7 +96,7 @@ Holding a Minecraft hoe or the **Build Hammer** (Valheim's build mode):
 - **Block terrain (F8):** Valheim's ground becomes real Minecraft blocks you can mine and build into, by biome, with ores below. It uses its own Minecraft save per world; your inventory, stats and builds follow you across both (blocks you dig out of the terrain stay in block mode). The blocks go down to bedrock where Valheim's own digging stops (8 m under its ground), and they follow changes made to Valheim's ground in the meantime (TNT craters, digging, the hoe) without touching your builds.
 - **Time:** Minecraft's time of day follows Valheim's, and Minecraft's `/time set` and `/time add` move Valheim's clock forward too (the host's).
 - **Death:** dying in Minecraft kills your Viking too, with Valheim's death screen, tombstone and respawn.
-- **Multiplayer:** you can play with unmodded Valheim players. They see your Viking walk, run, swim, crouch and jump, and fights and loot sync. They don't see your Minecraft blocks or mobs.
+- **Multiplayer (experimental, not fully tested yet):** everyone with ValCraft in the same Valheim world plays in one Minecraft world, so you see each other's Minecraft avatars, blocks, mobs and items. It happens on its own: the first ValCraft player in opens their Minecraft world to the others through [e4mc](https://e4mc.link) (included), and everyone after joins it; nobody types an address. Each player keeps their own Valheim underneath, so each one's loot, building costs, meads, skills and hits on Valheim's creatures go to their own Viking, and the host's world knows the ground and creatures around every player, not just the host. Another ValCraft player's Viking is hidden (their Minecraft avatar is where they are). Players without ValCraft see Vikings as usual, and fights and loot sync with them. `/join <address>` and `/leave` still pick a world by hand.
 
 ### Settings
 
@@ -114,6 +114,7 @@ In game: **ValCraft settings** in Valheim's pause menu (Esc) changes them on the
 | `[Explosions] Damage` | Multiplier for the damage Minecraft explosions (TNT, creepers) do to Valheim's creatures, trees, rocks and buildings (default 2) |
 | `[Explosions] Craters` | Multiplier for the size of the craters explosions blow in Valheim's ground (default 1; 0 = no craters) |
 | `[Explosions] CreeperGriefing` | Creeper explosions break the environment, in Valheim and in block terrain (Minecraft's mobGriefing rule; default off) |
+| `[Multiplayer] SharedWorld` | Everyone with ValCraft in the Valheim world plays in one Minecraft world (default on); off: your own |
 | `[Camera] FOV` | Field of view, the same setting as Minecraft's FOV option: changing either changes both |
 | `[Camera] ViewmodelFOV`, `LockViewmodelFOV` | The field of view your hands and held item are drawn at; locked (default) it follows FOV |
 | `[Controls] ValheimControls`, `BlockTerrain`, `Use`, `MinecraftOptions`, `Map`, `BuildRotate` | ValCraft's own keys (F7, F8, G, O, M, Alt); see Controls |
@@ -134,6 +135,9 @@ In game: **ValCraft settings** in Valheim's pause menu (Esc) changes them on the
 - Not every Valheim material has a Minecraft counterpart yet (some trophies and late-game items). Pieces that need one take it from the Valheim inventory, so they may not be buildable for now. More will be added; you can add your own in `ValCraft.loot.txt`.
 - The Queen's Sealbreaker and Fader's bells are crafted from fragments at Valheim's own crafting stations, which hasn't been tried with ValCraft yet.
 - Other players see your Viking standing in the water while you're in a boat, and Valheim's creatures don't bump into boats.
+- Multiplayer: the shared Minecraft world is the host's, so it closes when the host leaves; everyone else goes back to their own and the next ValCraft player in hosts. Builds made in it are saved in the host's world.
+- Multiplayer: everyone should use the same terrain mode (F8); the shared world is in the host's.
+- The first time a world is opened to friends, Windows may ask whether Java may use the network. e4mc works either way.
 - Minecraft's portals (Nether and End) don't work. They may or may not be added later.
 
 ## Layout

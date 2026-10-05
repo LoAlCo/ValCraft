@@ -328,6 +328,7 @@ namespace ValCraft
                        (BlockTerrain.On ? Proto.ValBlockTerrain : 0u) | Combat.MobPathingBits | Combat.MobSpawningBits |
                        (player != null && ZNet.instance && Game.IsPaused() ? Proto.ValPaused : 0u);
             CameraSettings.Write(ref st);
+            Multiplayer.Write(ref st);
             st.worldId = _worldId;
             st.collisionEpoch = Epoch;
             if (player != null)

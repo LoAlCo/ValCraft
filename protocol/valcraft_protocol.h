@@ -92,8 +92,13 @@ namespace valcraft::proto
 		// ValCraft: Valheim's [Camera] FOV for Minecraft's FOV option, applied when fovSeq changes
 		float         fovSetting;
 		std::uint32_t fovSeq;
+		// ValCraft multiplayer: which Minecraft world to be in. 0 our own, 1 our own opened to
+		// friends (e4mc), 2 a friend's at mpLink. Valheim picks (the friends in its world decide who hosts).
+		std::uint32_t mpMode;
+		std::uint32_t mpSeq;      // bumps when mpMode or mpLink changes
+		char          mpLink[64]; // UTF-8, NUL-terminated
 	};
-	static_assert(sizeof(ValState) == 0x48);
+	static_assert(sizeof(ValState) == 0x90);
 
 	// ---- MC -> Valheim state @0x200 (seqlock) ------------------------------------------------
 	enum McFlags : std::uint32_t
@@ -151,8 +156,11 @@ namespace valcraft::proto
 		// tell the player changing it in Minecraft's options from its own change on the way)
 		float         optionsFov;
 		std::uint32_t fovAck;
+		// ValCraft multiplayer: kMpPublished (our world is open to friends at mpLink), kMpInFriendWorld
+		std::uint32_t mpState;
+		char          mpLink[44];  // UTF-8, NUL-terminated: the link friends join (e4mc's domain)
 	};
-	static_assert(sizeof(McState) == 0xD0);
+	static_assert(sizeof(McState) == 0x100);
 	static_assert(sizeof(McState) <= 0x100);
 
 	// ---- overlay triple buffer @0x300 --------------------------------------------------------

@@ -245,6 +245,10 @@ public final class ValClient {
 	/** Called at the end of every client tick. */
 	public static void clientTick(Minecraft minecraft) {
 		MirrorWorld.tick(minecraft);
+		if (linked) {
+			SharedWorld.tick(minecraft);
+			GuestLink.tick(minecraft);
+		}
 		DiscordPresence.tick(minecraft);
 		freezeWhileUnlinked(minecraft);
 		holdUntilReady(minecraft);
@@ -467,6 +471,9 @@ public final class ValClient {
 					sp.resetFallDistance();
 				}
 			});
+		} else if (net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.canSend(dev.valcraft.net.ValNet.Teleport.TYPE)) {
+			// A guest in a friend's world: its server moves us too (it would otherwise call this a cheat and pull us back).
+			net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(new dev.valcraft.net.ValNet.Teleport(x, y, z, yaw, pitch));
 		}
 		ValCraft.LOG.info("ValCraft: teleported to {} {} {}", x, y, z);
 	}
@@ -548,6 +555,7 @@ public final class ValClient {
 		mc.teleportAck = holdPos == null ? teleportAck : teleportAck - 1; // not "arrived" until we are released
 		mc.guiScale = minecraft.getWindow().getGuiScale();
 		mc.frameCounter = ++frameCounter;
+		SharedWorld.report(minecraft, mc);
 		ValLink.writeMcState(mc);
 
 		if ((flags & Proto.MC_IN_WORLD) != 0) {

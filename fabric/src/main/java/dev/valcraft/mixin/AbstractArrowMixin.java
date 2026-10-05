@@ -60,6 +60,10 @@ public abstract class AbstractArrowMixin {
 		float pitch = (float) (Mth.atan2(v.y, v.horizontalDistance()) * Mth.RAD_TO_DEG);
 		int texture = self instanceof SpectralArrow ? 2 : self instanceof Arrow tippable && tippable.getColor() > 0 ? 1 : 0;
 		Vec3 at = this.valcraft$hitAt;
-		ValLink.pushEvent(Proto.EV_ARROW_STUCK, actor.formId(), (float) at.x, (float) at.y, (float) at.z, yaw, Float.floatToRawIntBits(pitch), texture);
+		// Everyone's Valheim pins it (each draws the creature itself).
+		if (self.level() instanceof net.minecraft.server.level.ServerLevel server) {
+			dev.valcraft.net.ValNet.pushEventAll(server.getServer(), Proto.EV_ARROW_STUCK, actor.formId(), (float) at.x, (float) at.y, (float) at.z, yaw,
+				Float.floatToRawIntBits(pitch), texture);
+		}
 	}
 }

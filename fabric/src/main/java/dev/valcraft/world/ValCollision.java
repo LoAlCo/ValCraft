@@ -37,6 +37,9 @@ public final class ValCollision {
 	private static final Set<Long> KNOWN_REGIONS = ConcurrentHashMap.newKeySet();
 	private static volatile int epoch = -1;
 	private static Thread consumer;
+	// Multiplayer: a guest's client hands its Valheim's ground on to the host's server (see GuestLink).
+	private static volatile java.util.function.@Nullable BiConsumer<Integer, byte[]> forwarder;
+	private static final java.util.List<Runnable> ON_CLEARED = new java.util.concurrent.CopyOnWriteArrayList<>();
 
 	private ValCollision() {
 	}
@@ -197,10 +200,14 @@ public final class ValCollision {
 				continue;
 			}
 			long payload = data + pos + 8;
+			var fwd = forwarder;
+			if (fwd != null && (type == COL_REGION || type == COL_TRIS || type == COL_TERRAIN)) {
+				fwd.accept(type, s.asSlice(payload, payloadBytes).toArray(JAVA_BYTE));
+			}
 			switch (type) {
 				case COL_CLEAR -> clear(s.get(JAVA_INT, payload));
-				case COL_REGION -> readRegion(s, payload);
-				case COL_TRIS -> readTris(s, payload);
+				case COL_REGION -> readRegion(s, payload, false);
+				case COL_TRIS -> readTris(s, payload, false);
 				case COL_TERRAIN -> readTerrain(s, payload);
 				default -> ValCraft.LOG.warn("ValCraft: unknown collision message {}", type);
 			}
@@ -230,9 +237,90 @@ public final class ValCollision {
 		KNOWN_REGIONS.clear();
 		epoch = newEpoch;
 		ValCraft.LOG.info("ValCraft: collision cleared (epoch {})", newEpoch);
+		for (Runnable cleared : ON_CLEARED) {
+			cleared.run();
+		}
 	}
 
-	private static void readRegion(MemorySegment s, long p) {
+	/** Multiplayer, guest side: every ground message our Valheim sends also goes here (null: stop). */
+	public static void setForwarder(java.util.function.@Nullable BiConsumer<Integer, byte[]> fwd) {
+		forwarder = fwd;
+	}
+
+	/** A forwarded region's later parts (it was split to fit a packet) carry this in their type. */
+	public static final int FORWARD_MORE = 0x100;
+
+	/** Multiplayer: run when our Valheim wipes its ground (a host: the guests' went with it; a guest: what it forwarded is old). */
+	public static void onCleared(Runnable run) {
+		ON_CLEARED.add(run);
+	}
+
+	/**
+	 * Multiplayer, host side: a guest's ground (GuestLink's batch: deflated [type, length, payload]...),
+	 * added to ours. Both Valheims describe the same world; the guest's pieces take this epoch.
+	 */
+	public static void receiveForwarded(byte[] deflated) {
+		if (epoch == -1) {
+			return; // our own Valheim hasn't described anything yet
+		}
+		byte[] raw;
+		try {
+			var inflater = new java.util.zip.Inflater();
+			inflater.setInput(deflated);
+			var out = new java.io.ByteArrayOutputStream(deflated.length * 4);
+			byte[] buf = new byte[65536];
+			while (!inflater.finished()) {
+				int n = inflater.inflate(buf);
+				if (n == 0 && (inflater.needsInput() || inflater.needsDictionary())) {
+					break;
+				}
+				out.write(buf, 0, n);
+				if (out.size() > (8 << 20)) {
+					break;
+				}
+			}
+			inflater.end();
+			raw = out.toByteArray();
+		} catch (java.util.zip.DataFormatException e) {
+			ValCraft.LOG.warn("ValCraft: a guest's ground didn't unpack", e);
+			return;
+		}
+		var in = java.nio.ByteBuffer.wrap(raw).order(java.nio.ByteOrder.nativeOrder());
+		while (in.remaining() >= 8) {
+			int type = in.getInt();
+			int len = in.getInt();
+			if (len < 32 || len > in.remaining()) {
+				break;
+			}
+			// An 8-aligned copy: the readers use aligned layouts.
+			long[] words = new long[(len + 7) / 8];
+			MemorySegment seg = MemorySegment.ofArray(words);
+			MemorySegment.copy(MemorySegment.ofArray(raw), in.position(), seg, 0, len);
+			in.position(in.position() + len);
+			try {
+				boolean more = (type & FORWARD_MORE) != 0;
+				switch (type & ~FORWARD_MORE) {
+					case COL_REGION -> {
+						seg.set(JAVA_INT, 24, epoch);
+						readRegion(seg, 0, more);
+					}
+					case COL_TRIS -> {
+						seg.set(JAVA_INT, 24, epoch);
+						readTris(seg, 0, more);
+					}
+					case COL_TERRAIN -> readTerrain(seg, 0);
+					default -> {
+					}
+				}
+			} catch (IndexOutOfBoundsException e) {
+				ValCraft.LOG.warn("ValCraft: a guest sent a broken ground message ({})", type);
+				return;
+			}
+		}
+	}
+
+	/** {@code more}: another part of a region already started (a guest's, split to fit a packet): add to it. */
+	private static void readRegion(MemorySegment s, long p, boolean more) {
 		int minX = s.get(JAVA_INT, p);
 		int minY = s.get(JAVA_INT, p + 4);
 		int minZ = s.get(JAVA_INT, p + 8);
@@ -262,6 +350,11 @@ public final class ValCollision {
 			}
 		}
 
+		if (more) {
+			SHAPES.putAll(fresh);
+			FILL.putAll(freshFill);
+			return;
+		}
 		for (int x = minX; x <= maxX; x++) {
 			for (int y = minY; y <= maxY; y++) {
 				for (int z = minZ; z <= maxZ; z++) {
@@ -287,7 +380,7 @@ public final class ValCollision {
 		}
 	}
 
-	private static void readTris(MemorySegment s, long p) {
+	private static void readTris(MemorySegment s, long p, boolean more) {
 		int minX = s.get(JAVA_INT, p);
 		int minY = s.get(JAVA_INT, p + 4);
 		int minZ = s.get(JAVA_INT, p + 8);
@@ -311,7 +404,15 @@ public final class ValCollision {
 				tris[kept++] = t;
 			}
 		}
-		TRIS.put(regionKey(Math.floorDiv(minX, REGION_SIZE), Math.floorDiv(minY, REGION_SIZE), Math.floorDiv(minZ, REGION_SIZE)), java.util.Arrays.copyOf(tris, kept));
+		long key = regionKey(Math.floorDiv(minX, REGION_SIZE), Math.floorDiv(minY, REGION_SIZE), Math.floorDiv(minZ, REGION_SIZE));
+		ValTri[] had = more ? TRIS.get(key) : null;
+		if (had != null) {
+			ValTri[] all = java.util.Arrays.copyOf(had, had.length + kept);
+			System.arraycopy(tris, 0, all, had.length, kept);
+			TRIS.put(key, all);
+		} else {
+			TRIS.put(key, java.util.Arrays.copyOf(tris, kept));
+		}
 	}
 
 	/** cx, cz, epoch, pad; then 256 columns [x + 16 z] of {short top, byte biome, byte flags}. */

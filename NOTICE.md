@@ -34,4 +34,4 @@ SOFTWARE.
 
 ## Minecraft side dependencies
 
-Fabric API (Apache-2.0) and, optionally, e4mc (MIT) are fetched by Gradle, not included here.
+Fabric API (Apache-2.0) and e4mc (MIT, https://github.com/vgskye/e4mc-minecraft-architectury) are fetched by Gradle and bundled unmodified with the Minecraft side of releases.

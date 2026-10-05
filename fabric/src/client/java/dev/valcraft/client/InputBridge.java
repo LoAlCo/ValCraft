@@ -99,61 +99,26 @@ public final class InputBridge {
 	private static byte[] giveBytes;
 	private static int giveFilled, giveCount;
 
-	/** Valheim loot picked up by the player: the matching Minecraft item into the inventory (dropped at the feet if full). */
+	/** Valheim loot picked up by the player: the matching Minecraft item into the inventory (dropped at the feet if full); negative: building costs out. */
 	private static void give(Minecraft minecraft, String id, int count) {
 		var server = minecraft.getSingleplayerServer();
-		if (minecraft.player == null || server == null || count == 0) {
+		if (minecraft.player == null || count == 0) {
 			return;
 		}
-		var key = net.minecraft.resources.Identifier.tryParse(id);
-		var item = key == null ? java.util.Optional.<net.minecraft.world.item.Item>empty() : net.minecraft.core.registries.BuiltInRegistries.ITEM.getOptional(key);
-		if (item.isEmpty() || item.get() == net.minecraft.world.item.Items.AIR) {
-			dev.valcraft.ValCraft.LOG.warn("ValCraft: Valheim loot maps to unknown item {}", id);
+		if (server == null) {
+			// A guest in a friend's world: the host's server fills (or empties) our inventory there.
+			if (net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.canSend(dev.valcraft.net.ValNet.Give.TYPE)) {
+				net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(new dev.valcraft.net.ValNet.Give(id, count));
+			}
 			return;
 		}
 		var uuid = minecraft.player.getUUID();
 		server.execute(() -> {
 			ServerPlayer player = server.getPlayerList().getPlayer(uuid);
-			if (player == null) {
-				return;
+			if (player != null) {
+				dev.valcraft.net.ValNet.giveOrTake(player, id, count);
 			}
-			if (count < 0) {
-				take(player, item.get(), -count);
-				return;
-			}
-			int left = count;
-			while (left > 0) {
-				int n = Math.min(left, item.get().getDefaultMaxStackSize());
-				var stack = new net.minecraft.world.item.ItemStack(item.get(), n);
-				if (!player.getInventory().add(stack) && !stack.isEmpty()) {
-					player.spawnAtLocation(player.level(), stack);
-				}
-				left -= n;
-			}
-			player.containerMenu.broadcastChanges();
-			player.level().playSound(null, player.getX(), player.getY(), player.getZ(), net.minecraft.sounds.SoundEvents.ITEM_PICKUP,
-				net.minecraft.sounds.SoundSource.PLAYERS, 0.2F, 1.4F + player.getRandom().nextFloat() * 0.4F);
 		});
-	}
-
-	/** Valheim building spent materials: they come out of the Minecraft inventory (nothing in creative). */
-	private static void take(ServerPlayer player, net.minecraft.world.item.Item item, int count) {
-		if (player.getAbilities().instabuild) {
-			return;
-		}
-		int left = count;
-		for (var stack : player.getInventory().getNonEquipmentItems()) {
-			if (left <= 0) {
-				break;
-			}
-			if (stack.is(item)) {
-				int n = Math.min(left, stack.getCount());
-				stack.shrink(n);
-				left -= n;
-			}
-		}
-		player.getInventory().setChanged();
-		player.containerMenu.broadcastChanges();
 	}
 
 	/** Valheim hit the player: apply it as Minecraft damage on the integrated server (or the host's). */
