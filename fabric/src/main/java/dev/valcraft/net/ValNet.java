@@ -156,6 +156,38 @@ public final class ValNet {
 		}
 	}
 
+	/** Guest -> server: a fire burns in the guest's Valheim here (MC coords): Minecraft catches fire there (FireBridge). */
+	public record ValheimFire(float x, float y, float z) implements CustomPacketPayload {
+		public static final Type<ValheimFire> TYPE = new Type<>(Identifier.fromNamespaceAndPath(ValCraft.MOD_ID, "valheim_fire"));
+		public static final StreamCodec<RegistryFriendlyByteBuf, ValheimFire> CODEC = StreamCodec.composite(
+			ByteBufCodecs.FLOAT, ValheimFire::x,
+			ByteBufCodecs.FLOAT, ValheimFire::y,
+			ByteBufCodecs.FLOAT, ValheimFire::z,
+			ValheimFire::new
+		);
+
+		@Override
+		public Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+
+	/** Guest -> server: a creature in the guest's Valheim hit a Minecraft mob (MobProxies). */
+	public record MobHit(int entityId, float damage, int attackerFormId) implements CustomPacketPayload {
+		public static final Type<MobHit> TYPE = new Type<>(Identifier.fromNamespaceAndPath(ValCraft.MOD_ID, "mob_hit"));
+		public static final StreamCodec<RegistryFriendlyByteBuf, MobHit> CODEC = StreamCodec.composite(
+			ByteBufCodecs.VAR_INT, MobHit::entityId,
+			ByteBufCodecs.FLOAT, MobHit::damage,
+			ByteBufCodecs.INT, MobHit::attackerFormId,
+			MobHit::new
+		);
+
+		@Override
+		public Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+
 	/** Server -> guest: an event for the guest's own Valheim (proto::McEvent: their hit on a creature, a mead, a skill, ...). */
 	public record Event(int kind, int formId, float a, float b, float c, float d, int flags, int weapon) implements CustomPacketPayload {
 		public static final Type<Event> TYPE = new Type<>(Identifier.fromNamespaceAndPath(ValCraft.MOD_ID, "event"));
@@ -182,6 +214,8 @@ public final class ValNet {
 		PayloadTypeRegistry.serverboundPlay().register(Teleport.TYPE, Teleport.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(Actors.TYPE, Actors.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(Ground.TYPE, Ground.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(ValheimFire.TYPE, ValheimFire.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(MobHit.TYPE, MobHit.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(Died.TYPE, Died.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(Event.TYPE, Event.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(GroundAgain.TYPE, GroundAgain.CODEC);
@@ -206,6 +240,18 @@ public final class ValNet {
 				player.setXRot(payload.pitch());
 				player.resetFallDistance();
 			});
+		});
+		ServerPlayNetworking.registerGlobalReceiver(ValheimFire.TYPE, (payload, context) -> {
+			ServerPlayer player = context.player();
+			// Only around the guest (their Valheim only sees its own surroundings).
+			if (player.distanceToSqr(payload.x(), payload.y(), payload.z()) < 96.0 * 96.0) {
+				context.server().execute(() -> dev.valcraft.world.FireBridge.valheimFire(player.level(), payload.x(), payload.y(), payload.z()));
+			}
+		});
+		ServerPlayNetworking.registerGlobalReceiver(MobHit.TYPE, (payload, context) -> {
+			ServerPlayer player = context.player();
+			float damage = Math.max(0.0F, Math.min(payload.damage(), 5000.0F));
+			context.server().execute(() -> ValCombat.valheimHitMob(player.level(), payload.entityId(), damage, payload.attackerFormId()));
 		});
 		ServerPlayNetworking.registerGlobalReceiver(Actors.TYPE, (payload, context) -> {
 			UUID id = context.player().getUUID();
@@ -294,6 +340,13 @@ public final class ValNet {
 		if (count < 0) {
 			take(player, item.get(), -count);
 			return;
+		}
+		// Valheim armor has no boots; ValCraft's version of the set does: they come with its leggings.
+		if (key.getNamespace().equals(ValCraft.MOD_ID) && key.getPath().endsWith("_leggings")) {
+			var boots = Identifier.fromNamespaceAndPath(ValCraft.MOD_ID, key.getPath().replace("_leggings", "_boots"));
+			if (net.minecraft.core.registries.BuiltInRegistries.ITEM.containsKey(boots)) {
+				giveOrTake(player, boots.toString(), count);
+			}
 		}
 		int left = count;
 		while (left > 0) {

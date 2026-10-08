@@ -38,11 +38,37 @@ public class ValheimActorEntity extends LivingEntity {
 	/** A ValCraft Valheim weapon's prefab hash and Minecraft damage, or 0: Valheim uses its own damage. */
 	private int pendingValheimWeapon;
 	private float pendingValheimBase;
+	/** A Minecraft tool's tier, kind and full damage (toolTier), or 0. */
+	private int pendingTier;
 	private double pushX, pushZ;
 	private float pushStrength;
 	private boolean hitThisTick;
 	/** The player whose hit this tick is (their own Valheim applies it), or null for mobs. */
 	private java.util.@Nullable UUID pendingAttacker;
+	private static final int TORCH_BURN_TICKS = 30;
+	// What Valheim was last told about this one burning (ValCombat.tellBurning): when, and for how long.
+	private int burnToldAt = -1000, burnToldTicks;
+
+	/**
+	 * True when Valheim should hear that this creature is burning: it just caught fire, or the fire
+	 * was renewed (still in lava or fire) since Valheim was told, at most twice a second.
+	 */
+	public boolean burningNews() {
+		int fire = this.isOnFire() && !this.fireImmune() ? this.getRemainingFireTicks() : 0;
+		if (fire <= 0) {
+			this.burnToldTicks = 0;
+			return false;
+		}
+		int since = this.tickCount - this.burnToldAt;
+		int expected = this.burnToldTicks - since;
+		if (this.burnToldTicks > 0 && (since < 10 || fire <= expected + 10)) {
+			return false;
+		}
+		this.burnToldAt = this.tickCount;
+		this.burnToldTicks = fire;
+		return true;
+	}
+
 	/** Hostile to the player in Valheim: Minecraft's monsters and iron golems go after it. */
 	private boolean hostile;
 
@@ -106,6 +132,10 @@ public class ValheimActorEntity extends LivingEntity {
 		if (this.isInvulnerableTo(level, source) || dmg <= 0.0F) {
 			return;
 		}
+		// Burning: Valheim's own Burning effect does the damage over time (EV_IGNITE, see ValCombat).
+		if (source.is(net.minecraft.world.damagesource.DamageTypes.ON_FIRE)) {
+			return;
+		}
 		this.pendingDamage += dmg;
 		if (source.getDirectEntity() instanceof Projectile) {
 			this.pendingFlags |= Proto.HIT_PROJECTILE;
@@ -118,12 +148,24 @@ public class ValheimActorEntity extends LivingEntity {
 		if (!(source.getDirectEntity() instanceof Projectile) && held != null && held.getItem() instanceof dev.valcraft.item.ValheimItems.Weapon w) {
 			this.pendingValheimWeapon = w.prefabHash;
 			this.pendingValheimBase = w.damage;
+		} else if (!(source.getDirectEntity() instanceof Projectile) && held != null && source.getEntity() instanceof net.minecraft.world.entity.player.Player) {
+			this.pendingTier = toolTier(held);
 		}
 		if (source.is(net.minecraft.tags.DamageTypeTags.IS_FIRE)) {
 			this.pendingFlags |= Proto.HIT_FIRE;
+			// lava, fire, a fireball, a magma block: fire alone, no blow (Valheim's fire-proof creatures take none)
+			this.pendingFlags |= Proto.HIT_PURE_FIRE;
+		}
+		// A Minecraft torch sets Valheim creatures alight, as Valheim's torch does; only briefly, as it never wears out.
+		if (!(source.getDirectEntity() instanceof Projectile) && held != null && (held.is(Items.TORCH) || held.is(Items.SOUL_TORCH))) {
+			this.igniteForTicks(TORCH_BURN_TICKS);
 		}
 		if (!(source.getEntity() instanceof net.minecraft.world.entity.player.Player)) {
 			this.pendingFlags |= Proto.HIT_MOB;
+			// which mob, so Valheim's creature turns on its stand-in there (MobProxies)
+			if (source.getEntity() instanceof net.minecraft.world.entity.Mob mob) {
+				this.pendingTier = mob.getId() & 0xFFFFFF;
+			}
 		}
 		if (source.getEntity() instanceof net.minecraft.server.level.ServerPlayer attacker) {
 			this.pendingAttacker = attacker.getUUID();
@@ -148,6 +190,31 @@ public class ValheimActorEntity extends LivingEntity {
 	/** Player.crit() was called on us this tick. */
 	public void markCritical() {
 		this.pendingFlags |= Proto.HIT_CRITICAL;
+	}
+
+	/**
+	 * A Minecraft tool's place in Valheim's progression, for Valheim's damage (Combat.cs): bits 0-3
+	 * the material's tier (1 wood, 2 stone or gold, 3 copper, 4 iron, 5 diamond, 6 netherite), bits
+	 * 4-7 the kind (1 sword, 2 axe, 3 pickaxe/shovel/hoe, 4 spear), bits 8-15 its full hit's damage
+	 * x10 (so Valheim scales crits, Sharpness and cooldown the same). 0: not a tool, damage as is.
+	 */
+	private static int toolTier(ItemStack held) {
+		int kind = held.is(ItemTags.SWORDS) ? 1 : held.is(ItemTags.AXES) ? 2
+			: held.is(ItemTags.PICKAXES) || held.is(ItemTags.SHOVELS) || held.is(ItemTags.HOES) ? 3 : held.is(ItemTags.SPEARS) ? 4 : 0;
+		if (kind == 0) {
+			return 0;
+		}
+		String id = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(held.getItem()).getPath();
+		int tier = id.startsWith("wooden_") ? 1 : id.startsWith("stone_") || id.startsWith("golden_") ? 2 : id.startsWith("copper_") ? 3
+			: id.startsWith("iron_") ? 4 : id.startsWith("diamond_") ? 5 : id.startsWith("netherite_") ? 6 : 0;
+		if (tier == 0) {
+			return 0;
+		}
+		var modifiers = held.getOrDefault(net.minecraft.core.component.DataComponents.ATTRIBUTE_MODIFIERS,
+			net.minecraft.world.item.component.ItemAttributeModifiers.EMPTY);
+		double full = modifiers.compute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE, 1.0, net.minecraft.world.entity.EquipmentSlot.MAINHAND);
+		int base = (int) Math.round(Math.clamp(full, 1.0, 25.0) * 10.0);
+		return tier | kind << 4 | base << 8;
 	}
 
 	/** Which kind of Valheim weapon impact this hit should look and sound like. */
@@ -191,7 +258,8 @@ public class ValheimActorEntity extends LivingEntity {
 			return null;
 		}
 		float[] hit = { this.pendingDamage, (float) this.pushX, (float) this.pushZ, this.pushStrength, Float.intBitsToFloat(this.pendingFlags),
-			Float.intBitsToFloat(this.pendingWeapon), Float.intBitsToFloat(this.pendingValheimWeapon), this.pendingValheimBase };
+			Float.intBitsToFloat(this.pendingWeapon | this.pendingTier << 8), Float.intBitsToFloat(this.pendingValheimWeapon), this.pendingValheimBase };
+		this.pendingTier = 0;
 		this.pendingValheimWeapon = 0;
 		this.pendingValheimBase = 0.0F;
 		this.pendingDamage = 0.0F;

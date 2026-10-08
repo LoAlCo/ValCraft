@@ -77,7 +77,7 @@ namespace ValCraft.Render
             {
                 m.EnableKeyword("_EMISSION");
                 m.SetTexture("_EmissionMap", texture);
-                m.SetColor("_EmissionColor", (Color)c * 0.8f);
+                m.SetColor("_EmissionColor", (Color)c * (tex ? 0.8f : 1.15f));  // shining blocks a little brighter than lit TNT's flash
                 m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
             }
             _cache[key] = m;

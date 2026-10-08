@@ -14,7 +14,7 @@ using ValCraft.Link;
 namespace ValCraft
 {
     // "ValCraft settings" in Valheim's pause menu (under Valheim's own Settings): every ValCraft
-    // setting from its config, by section, changed in place (on/off, - and +, a choice, a key), plus
+    // setting from its config, by section, changed in place (on/off, - and +, a choice, a key, text), plus
     // a button to Minecraft's own options screen. Saved straight to the config like any other change.
     public static class SettingsMenu
     {
@@ -180,7 +180,7 @@ namespace ValCraft
             view.anchorMin = new Vector2(0, 0);
             view.anchorMax = new Vector2(1, 1);
             view.offsetMin = new Vector2(30, 80);
-            view.offsetMax = new Vector2(-30, -76);
+            view.offsetMax = new Vector2(-30 - ScrollBarWidth - 8, -76);
             view.gameObject.AddComponent<RectMask2D>();
             view.gameObject.AddComponent<Image>().color = new Color(0, 0, 0, 0.25f);
             var content = Rect("Content", view);
@@ -200,8 +200,10 @@ namespace ValCraft
             scroll.viewport = view;
             scroll.content = content;
             scroll.horizontal = false;
-            scroll.scrollSensitivity = 40;
+            scroll.scrollSensitivity = 120;
             scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.verticalScrollbar = ScrollBar(window);
+            scroll.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
             _content = content;
 
             // the bottom row: Minecraft's own options, and back
@@ -223,6 +225,40 @@ namespace ValCraft
             Populate();
         }
 
+        const float ScrollBarWidth = 16;
+
+        // The bar right of the list: a dark track, a gold handle to drag.
+        static Scrollbar ScrollBar(Transform window)
+        {
+            var track = Rect("ScrollBar", window);
+            track.anchorMin = new Vector2(1, 0);
+            track.anchorMax = new Vector2(1, 1);
+            track.pivot = new Vector2(1, 0.5f);
+            track.offsetMin = new Vector2(-30 - ScrollBarWidth, 80);
+            track.offsetMax = new Vector2(-30, -76);
+            track.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.45f);
+            var area = Rect("Sliding Area", track);
+            area.anchorMin = Vector2.zero;
+            area.anchorMax = Vector2.one;
+            area.offsetMin = area.offsetMax = Vector2.zero;
+            var handle = Rect("Handle", area);
+            handle.offsetMin = handle.offsetMax = Vector2.zero;
+            var image = handle.gameObject.AddComponent<Image>();
+            image.color = Color.white;
+            var bar = track.gameObject.AddComponent<Scrollbar>();
+            bar.handleRect = handle;
+            bar.targetGraphic = image;
+            bar.direction = Scrollbar.Direction.BottomToTop;
+            var colours = bar.colors;
+            colours.normalColor = new Color(0.8f, 0.55f, 0.2f, 0.7f);
+            colours.highlightedColor = new Color(1f, 0.7f, 0.3f, 0.9f);
+            colours.pressedColor = new Color(1f, 0.82f, 0.45f, 1f);
+            colours.selectedColor = colours.normalColor;
+            colours.fadeDuration = 0.05f;
+            bar.colors = colours;
+            return bar;
+        }
+
         static void OpenMinecraftOptions()
         {
             Close();
@@ -231,7 +267,10 @@ namespace ValCraft
         }
 
         // ---- the settings ---------------------------------------------------------------------
-        static readonly HashSet<string> HiddenSections = new HashSet<string> { "Debug" };
+        // Behind "Advanced settings": which Minecraft to start and how (set up for you), and Debug
+        // (exports and stats for making ValCraft, not playing it).
+        static readonly string[] AdvancedSections = { "Minecraft", "Debug" };
+        static bool _showAdvanced;
 
         static void Populate()
         {
@@ -240,30 +279,57 @@ namespace ValCraft
             foreach (var kv in config)
             {
                 var e = kv.Value;
-                if (HiddenSections.Contains(kv.Key.Section) || !Supported(e)) continue;
+                if (!Supported(e)) continue;
                 if (!bySection.TryGetValue(kv.Key.Section, out var list)) bySection[kv.Key.Section] = list = new List<ConfigEntryBase>();
                 list.Add(e);
             }
             foreach (var section in bySection)
+                if (Array.IndexOf(AdvancedSections, section.Key) < 0) Section(_content, section.Key, section.Value);
+
+            // the advanced ones, folded away under a button
+            var row = Rect("AdvancedRow", _content);
+            var h = row.gameObject.AddComponent<HorizontalLayoutGroup>();
+            h.childAlignment = TextAnchor.MiddleCenter;
+            h.childControlWidth = h.childControlHeight = true;
+            h.childForceExpandWidth = h.childForceExpandHeight = false;
+            h.padding = new RectOffset(0, 0, 14, 6);
+            var advanced = Rect("Advanced", _content);
+            var v = advanced.gameObject.AddComponent<VerticalLayoutGroup>();
+            v.spacing = 6;
+            v.childControlWidth = v.childControlHeight = true;
+            v.childForceExpandWidth = true;
+            v.childForceExpandHeight = false;
+            foreach (var name in AdvancedSections)
+                if (bySection.TryGetValue(name, out var list)) Section(advanced, name, list);
+            Button button = null;
+            Action show = () =>
             {
-                var head = Text(_content, Pretty(section.Key), 30, new Color(1f, 0.82f, 0.45f));
-                head.gameObject.AddComponent<LayoutElement>().preferredHeight = 44;
-                foreach (var e in section.Value) Row(e);
-            }
+                advanced.gameObject.SetActive(_showAdvanced);
+                Show(button, _showAdvanced ? "Hide advanced settings" : "Advanced settings");
+            };
+            button = SmallButton(row, "", 340, () => { _showAdvanced = !_showAdvanced; show(); });
+            _refresh.Add(show);
+        }
+
+        static void Section(Transform parent, string name, List<ConfigEntryBase> entries)
+        {
+            var head = Text(parent, Pretty(name), 30, new Color(1f, 0.82f, 0.45f));
+            head.gameObject.AddComponent<LayoutElement>().preferredHeight = 44;
+            foreach (var e in entries) Row(parent, e);
         }
 
         static bool Supported(ConfigEntryBase e)
         {
             var t = e.SettingType;
             if (t == typeof(bool) || t == typeof(int) || t == typeof(float) || t == typeof(KeyCode)) return true;
-            return t == typeof(string) && e.Description.AcceptableValues is AcceptableValueList<string>;
+            return t == typeof(string);
         }
 
         static string Pretty(string key) => Regex.Replace(key, "(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", " ");
 
-        static void Row(ConfigEntryBase e)
+        static void Row(Transform parent, ConfigEntryBase e)
         {
-            var row = Rect("Row", _content);
+            var row = Rect("Row", parent);
             var h = row.gameObject.AddComponent<HorizontalLayoutGroup>();
             h.spacing = 10;
             h.childAlignment = TextAnchor.MiddleLeft;
@@ -333,6 +399,12 @@ namespace ValCraft
                 });
                 _refresh.Add(() => Show(button, s.Value));
             }
+            else if (e is ConfigEntry<string> text)
+            {
+                var field = TextField(controls, 300);
+                field.onEndEdit.AddListener(v => text.Value = v.Trim());
+                _refresh.Add(() => field.SetTextWithoutNotify(text.Value));
+            }
             else if (e is ConfigEntry<KeyCode> k)
             {
                 Button button = null;
@@ -355,6 +427,47 @@ namespace ValCraft
             le.preferredWidth = le.minWidth = 148;
             SmallButton(parent, "+", 64, () => { change(1); label.text = value(); }, 34);
             _refresh.Add(() => label.text = value());
+        }
+
+        // A text box (a path, a list of names): saved when you press Enter or click away.
+        static TMP_InputField TextField(Transform parent, float width)
+        {
+            var rt = Rect("TextField", parent);
+            rt.gameObject.AddComponent<Image>().color = new Color(0.02f, 0.02f, 0.02f, 0.8f);
+            var le = rt.gameObject.AddComponent<LayoutElement>();
+            le.preferredWidth = le.minWidth = width;
+            le.preferredHeight = le.minHeight = 40;
+            var area = Rect("Text Area", rt);
+            area.anchorMin = Vector2.zero;
+            area.anchorMax = Vector2.one;
+            area.offsetMin = new Vector2(10, 4);
+            area.offsetMax = new Vector2(-10, -4);
+            area.gameObject.AddComponent<RectMask2D>();
+            var text = Text(area, "", 19, Color.white);
+            text.enableWordWrapping = false;
+            text.alignment = TextAlignmentOptions.MidlineLeft;
+            var tr = text.rectTransform;
+            tr.anchorMin = Vector2.zero;
+            tr.anchorMax = Vector2.one;
+            tr.offsetMin = tr.offsetMax = Vector2.zero;
+            var field = rt.gameObject.AddComponent<TMP_InputField>();
+            field.textViewport = area;
+            field.textComponent = text;
+            field.fontAsset = text.font;
+            field.pointSize = 19;
+            field.lineType = TMP_InputField.LineType.SingleLine;
+            field.caretColor = Color.white;
+            field.customCaretColor = true;
+            field.selectionColor = new Color(0.8f, 0.55f, 0.25f, 0.5f);
+            return field;
+        }
+
+        // True while a text box is being typed in (Esc then leaves the box, not the panel).
+        static bool Typing()
+        {
+            var selected = EventSystem.current ? EventSystem.current.currentSelectedGameObject : null;
+            var field = selected ? selected.GetComponent<TMP_InputField>() : null;
+            return field && field.isFocused;
         }
 
         const string Label = "ValCraftLabel";
@@ -387,7 +500,9 @@ namespace ValCraft
                     }
                     return;
                 }
-                if (kb.escapeKey.wasPressedThisFrame) Close();
+                if (!kb.escapeKey.wasPressedThisFrame) return;
+                if (Typing()) EventSystem.current.SetSelectedGameObject(null);
+                else Close();
             }
         }
     }

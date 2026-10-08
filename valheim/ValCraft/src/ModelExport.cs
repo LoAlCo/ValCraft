@@ -254,6 +254,22 @@ namespace ValCraft
         }
 
         // Game textures can't be read directly: copy through a render texture.
+        // For ArmorExport: a texture's pixels, and a mesh's vertices, UVs and triangles (from the GPU if need be).
+        public static Texture2D ReadableTexture(Texture tex) => Readable(tex);
+
+        public static bool ReadMesh(Mesh mesh, out Vector3[] verts, out Vector2[] uvs, out List<int[]> subs)
+        {
+            if (mesh.isReadable)
+            {
+                verts = mesh.vertices;
+                uvs = mesh.uv;
+                subs = new List<int[]>();
+                for (int s = 0; s < mesh.subMeshCount; s++) subs.Add(mesh.GetTriangles(s));
+                return true;
+            }
+            return ReadFromGpu(mesh, out verts, out uvs, out subs);
+        }
+
         static Texture2D Readable(Texture tex)
         {
             if (_readable.TryGetValue(tex, out var cached)) return cached;

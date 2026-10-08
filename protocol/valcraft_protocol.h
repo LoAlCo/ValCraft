@@ -61,7 +61,7 @@ namespace valcraft::proto
 		kValLoading = 1u << 2,   // loading screen / cell transition in progress
 		// ValCraft: bit 3 block terrain, bits 4-5 mob pathfinding (see Proto.cs / Proto.java)
 		kValPaused = 1u << 6,    // Valheim's game is paused (single player, menu open): pause MC too
-		// ValCraft: bit 7 mob natural spawning, bit 8 mob griefing
+		// ValCraft: bit 7 mob natural spawning, bit 8 mob griefing, bit 9 wet weather (rain, snow), bit 10 thunderstorm
 	};
 
 	// Valheim's water (lakes, rivers, the sea) around the player, for Minecraft to treat as its own
@@ -116,6 +116,9 @@ namespace valcraft::proto
 		kMcHoldingHoe = 1u << 10, // ValCraft: a hoe / the Valheim Hammer in the main hand (Valheim build modes)
 		kMcCreative = 1u << 11,   // creative mode: building costs nothing
 		kMcHoldingHammer = 1u << 12,
+		kMcHoldingLight = 1u << 13,      // ValCraft: a torch, lantern or other light in hand (Valheim lights the player like its torch)
+		kMcHoldingSoulLight = 1u << 14,  // ...a soul torch or lantern: blue
+		kMcInBoat = 1u << 15,            // ValCraft: riding a Minecraft boat (the Viking sits, for everyone to see)
 	};
 
 	struct McState
@@ -206,6 +209,8 @@ namespace valcraft::proto
 		kInOpenMenu = 8,     // open Minecraft's pause/options menu
 		kInGive = 9,         // ValCraft loot bridge: a = count (negative: take, for building costs), b = item id length (UTF-8); kInGiveData events follow
 		kInGiveData = 10,    // the next 12 bytes of the item id in a, b, c (little-endian)
+		kInValheimFire = 11, // ValCraft: a Valheim fire burns at a/b/c (MC coords x 8): Minecraft's flammable blocks and mobs there catch fire
+		kInMobHit = 12,      // ValCraft: a Valheim creature hit a Minecraft mob: a = its entity id, b = Valheim damage x 100, c = the creature's form id
 	};
 
 	enum HurtKind : std::uint16_t
@@ -274,7 +279,8 @@ namespace valcraft::proto
 		kEvSkillUse = 5,    // the player used a Valheim skill in Minecraft: formId = Valheim skill (ActorValue: 9 Block,
 		                    // 10 Smithing, 11 Heavy Armor, 12 Light Armor), a = uses (as Valheim's AdvanceSkill counts them)
 		kEvValheimHit = 6,  // a swing at Valheim's world: formId = tool (ToolKind | tier << 4), a/b/c = hit point (MC coords), d = attack strength 0..1
-		// ValCraft: 7 build sync, 9 set time (a = hour 0-24, b = extra days), 10 consume (formId = prefab name hash), 11 hit weapon (before a hit: formId = Valheim weapon prefab hash, a = its MC damage); see Proto.java
+		// ValCraft: 7 build sync, 9 set time (a = hour 0-24, b = extra days), 10 consume (formId = prefab name hash), 11 hit weapon (before a hit: formId = Valheim weapon prefab hash, a = its MC damage),
+		// 12 ignite (formId, a = seconds it burns: a Valheim actor's stand-in caught fire in Minecraft); see Proto.java
 	};
 
 	enum ToolKind : std::uint32_t
@@ -293,9 +299,12 @@ namespace valcraft::proto
 		kHitProjectile = 1u << 1,
 		kHitSweep = 1u << 2,
 		kHitFire = 1u << 3,
+		// ValCraft: 1 << 4 a mob's hit, 1 << 5 fire alone (lava, fire, fireballs, magma)
 	};
 
-	// What landed a kEvHitActor (Valheim plays that weapon class's impact effect and sounds).
+	// What landed a kEvHitActor (Valheim plays that weapon class's impact effect and sounds), in the
+	// low byte of McEvent::weapon. ValCraft: bits 8+ = a Minecraft tool's tier, kind and full damage
+	// (ValheimActorEntity.toolTier), for Valheim's tiered damage.
 	enum HitWeapon : std::uint32_t
 	{
 		kWeaponUnarmed = 0,
@@ -356,6 +365,32 @@ namespace valcraft::proto
 	static_assert(sizeof(WorldEntities) == 0x40 + sizeof(WorldEntity) * kMaxWorldEntities);
 	static_assert(kOffWorldEntities + sizeof(WorldEntities) <= kOffCollisionRing);
 
+	// ---- boss bars @0x1FD00 (MC -> Valheim, seqlock) -------------------------------------------
+	// ValCraft: Minecraft's bosses near the player (the Wither, the Ender Dragon, the Warden, an
+	// Elder Guardian, a raid), for Valheim to show with its own boss health bar.
+	inline constexpr std::uint64_t kOffBossTable = 0x1FD00;
+	inline constexpr std::uint32_t kMaxBosses = 8;
+
+	struct BossRecord
+	{
+		std::uint32_t id;        // stable while the boss (or raid) lasts
+		float         progress;  // health / max health (a raid: what's left of it), 0..1
+		std::uint32_t kind;      // 1 Wither, 2 Ender Dragon, 3 Warden, 4 Elder Guardian, 5 raid, 0 other
+		std::uint32_t pad;
+		char          name[48];  // UTF-8, NUL-terminated, as Minecraft names it
+	};
+	static_assert(sizeof(BossRecord) == 64);
+
+	struct BossTable
+	{
+		std::uint32_t seq;
+		std::uint32_t count;
+		std::uint32_t pad[2];
+		BossRecord    bosses[kMaxBosses];
+	};
+	static_assert(kOffBossTable >= kOffWorldEntities + sizeof(WorldEntities));
+	static_assert(kOffBossTable + sizeof(BossTable) <= kOffCollisionRing);
+
 	// ---- render ring (MC -> Valheim) -----------------------------------------------------------
 	// Byte ring like the collision ring. Minecraft ships its own block meshes (built by Minecraft's
 	// block renderer: models, tint, AO, lighting) and its block atlas; Valheim draws them in its own
@@ -390,6 +425,10 @@ namespace valcraft::proto
 		                      // what the player carries, for Valheim building costs (BuildTools)
 		kRenItemIcons = 13,   // ValCraft: int entries, then per entry int id length, UTF-8 id, float u0 v0 u1 v1:
 		                      // every item's icon in the atlas, for the build menu's costs
+		kRenMobs = 14,        // ValCraft: int count, then per mob: int entity id, int flags (1 hostile/ally of the
+		                      // player: Valheim's monsters fight it; else an animal), float x y z (feet, MC), yaw,
+		                      // width, height, health, max health, int name length, UTF-8 name: Minecraft's mobs near
+		                      // the player, for Valheim's creatures to see and fight (MobProxies)
 	};
 
 	struct RenSolids
@@ -492,7 +531,7 @@ namespace valcraft::proto
 		float         u, v;     // atlas UV
 		std::uint32_t color;    // RGBA8 (tint * ambient occlusion; Minecraft's fixed face shading is left out)
 		std::uint32_t light;    // low byte: block light 0-15, next byte: sky light 0-15
-		std::uint32_t flags;    // bit0: cutout (alpha test), bit1: translucent,
+		std::uint32_t flags;    // bit0: cutout (alpha test), bit1: translucent, bit3 (ValCraft): the block shines (glows),
 		                        // bits 4-6: face normal as MC Direction ordinal + 1 (0 = none: lit without a normal)
 	};
 	static_assert(sizeof(RenVertex) == 32);

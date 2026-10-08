@@ -44,6 +44,10 @@ public final class Proto {
 	// IN_GIVE_DATA events follow with 12 id bytes each in a, b, c
 	public static final int IN_GIVE = 9;
 	public static final int IN_GIVE_DATA = 10;
+	/** ValCraft: a Valheim fire at a/b/c (MC coords x 8): Minecraft's flammable blocks and mobs there catch fire (FireBridge). */
+	public static final int IN_VALHEIM_FIRE = 11;
+	/** ValCraft: a Valheim creature hit a Minecraft mob: a = entity id, b = Valheim damage x 100, c = the creature's form id. */
+	public static final int IN_MOB_HIT = 12;
 	public static final int HURT_MELEE = 0;
 	public static final int HURT_PROJECTILE = 1;
 	public static final int HURT_MAGIC = 2;
@@ -85,6 +89,10 @@ public final class Proto {
 	public static final int EV_CONSUME = 10;
 	/** Just before an EV_HIT_ACTOR made with a ValCraft Valheim weapon: formId = its prefab's hash, a = its Minecraft damage. */
 	public static final int EV_HIT_WEAPON = 11;
+	/** ValCraft: a Valheim actor's stand-in caught fire: formId, a = seconds it burns. Valheim sets the creature burning. */
+	public static final int EV_IGNITE = 12;
+	/** EV_HIT_ACTOR flag: the hit is fire alone (lava, fire, fireballs, magma): Valheim deals it as fire damage only. */
+	public static final int HIT_PURE_FIRE = 1 << 5;
 	public static final int TOOL_NONE = 0, TOOL_SWORD = 1, TOOL_AXE = 2, TOOL_PICKAXE = 3, TOOL_SHOVEL = 4, TOOL_HOE = 5;
 	// Valheim skills (ActorValue) Minecraft reports use of; weapon skills come from EV_HIT_ACTOR.
 	public static final int SKILL_BLOCK = 9;
@@ -106,6 +114,13 @@ public final class Proto {
 
 	// World entities (relative to OFF_WORLD_ENTITIES)
 	public static final int MAX_WORLD_ENTITIES = 160;
+	// ValCraft: boss bars (see BossTable): seq, count, then MAX_BOSSES records of BOSS_RECORD_BYTES
+	public static final long OFF_BOSS_TABLE = 0x1FD00;
+	public static final int MAX_BOSSES = 8;
+	public static final long BOSS_RECORDS = 0x10;
+	public static final int BOSS_RECORD_BYTES = 64;
+	public static final int BOSS_NAME_BYTES = 48;
+	public static final int BOSS_OTHER = 0, BOSS_WITHER = 1, BOSS_DRAGON = 2, BOSS_WARDEN = 3, BOSS_ELDER_GUARDIAN = 4, BOSS_RAID = 5;
 	public static final long WE_SEQ = 0x00;
 	public static final long WE_COUNT = 0x04;
 	public static final long WE_HAS_SELECTION = 0x08;
@@ -143,6 +158,8 @@ public final class Proto {
 	public static final int REN_INVENTORY = 12;
 	/** ValCraft: every item's icon in the atlas (int entries, then per entry: int id length, UTF-8 id, u0 v0 u1 v1), for Valheim's build menu. */
 	public static final int REN_ITEM_ICONS = 13;
+	/** ValCraft: Minecraft's mobs near the player, for Valheim's creatures to fight (MobExporter / MobProxies.cs). */
+	public static final int REN_MOBS = 14;
 	public static final int PART_HEAD = 1, PART_BODY = 2, PART_RIGHT_ARM = 3, PART_LEFT_ARM = 4, PART_RIGHT_LEG = 5, PART_LEFT_LEG = 6;
 	public static final int LIGHT_STEADY = 0, LIGHT_FLAME = 1, LIGHT_LAVA = 2;
 	public static final int REN_VERTEX_BYTES = 32;
@@ -190,6 +207,8 @@ public final class Proto {
 	public static final int VAL_MOB_SPAWNING = 1 << 7;
 	/** ValCraft: [Explosions] CreeperGriefing, Minecraft's mobGriefing rule. */
 	public static final int VAL_MOB_GRIEFING = 1 << 8;
+	/** ValCraft: Valheim's weather where the player is: rain or snow (Minecraft rains), a thunderstorm (it thunders). */
+	public static final int VAL_WET = 1 << 9, VAL_THUNDER = 1 << 10;
 
 	// McState (relative to OFF_MC_STATE)
 	public static final long MS_SEQ = 0x00;
@@ -245,6 +264,9 @@ public final class Proto {
 	public static final int MC_HOLDING_HOE = 1 << 10;
 	public static final int MC_CREATIVE = 1 << 11;
 	public static final int MC_HOLDING_HAMMER = 1 << 12;
+	public static final int MC_HOLDING_LIGHT = 1 << 13;
+	public static final int MC_HOLDING_SOUL_LIGHT = 1 << 14;
+	public static final int MC_IN_BOAT = 1 << 15;
 
 	// Overlay
 	public static final long OC_STATE = 0x00;

@@ -248,6 +248,8 @@ public final class ValClient {
 		if (linked) {
 			SharedWorld.tick(minecraft);
 			GuestLink.tick(minecraft);
+			BossBars.tick(minecraft);
+			dev.valcraft.client.render.MobExporter.tick(minecraft);
 		}
 		DiscordPresence.tick(minecraft);
 		freezeWhileUnlinked(minecraft);
@@ -326,6 +328,21 @@ public final class ValClient {
 		mc.bobO = bob ? avatar.getInterpolatedBob(0.0F) : 0.0F;
 		mc.bob = bob ? avatar.getInterpolatedBob(1.0F) : 0.0F;
 		ValLink.writeMcState(mc);
+	}
+
+	/**
+	 * A light in hand (a torch, lantern, glowstone, ... any block item that glows brightly):
+	 * Valheim lights the player the way its own torch does (HeldLight.cs). Soul ones glow blue.
+	 */
+	private static int heldLight(net.minecraft.world.item.ItemStack stack) {
+		if (stack.isEmpty() || !(stack.getItem() instanceof net.minecraft.world.item.BlockItem item)) {
+			return 0;
+		}
+		if (item.getBlock().defaultBlockState().getLightEmission() < 10) {
+			return 0;
+		}
+		String id = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath();
+		return Proto.MC_HOLDING_LIGHT | (id.contains("soul") ? Proto.MC_HOLDING_SOUL_LIGHT : 0);
 	}
 
 	/** Freeze the player until Valheim's collision around them has arrived. */
@@ -524,6 +541,10 @@ public final class ValClient {
 			if (player.getMainHandItem().is(dev.valcraft.item.ValItems.BUILD_HAMMER)) {
 				flags |= Proto.MC_HOLDING_HAMMER;
 			}
+			flags |= heldLight(player.getMainHandItem()) | heldLight(player.getOffhandItem());
+			if (player.getVehicle() instanceof net.minecraft.world.entity.vehicle.boat.AbstractBoat) {
+				flags |= Proto.MC_IN_BOAT;
+			}
 			mc.x = feet.x;
 			mc.y = feet.y;
 			mc.z = feet.z;
@@ -609,6 +630,8 @@ public final class ValClient {
 			minecraft.getTutorial().setStep(net.minecraft.client.tutorial.TutorialSteps.NONE);
 		}
 		options.getSoundSourceOptionInstance(net.minecraft.sounds.SoundSource.MUSIC).set(0.0);
+		// Minecraft's rain and thunder follow Valheim's (WeatherSync), which plays its own
+		options.getSoundSourceOptionInstance(net.minecraft.sounds.SoundSource.WEATHER).set(0.0);
 		options.save();
 	}
 

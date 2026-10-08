@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "valcraft:caller"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "valcraft:caller"
+      }
+    ]
+  }
+}

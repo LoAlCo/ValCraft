@@ -34,6 +34,18 @@ public final class TerrainPath {
 	private static volatile int quality = -1;
 	private static final java.util.Map<Mob, Object[]> RECENT = new java.util.WeakHashMap<>();
 	private static final double MAX_RISE = 1.2, MAX_DROP = 3.0;
+	// Paths planned here: their points are columns of Valheim ground, not blocks (see isOurs).
+	private static final java.util.Set<Path> OURS = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
+
+	/**
+	 * A path over Valheim's ground: its points are columns, at the terrain's height. A mob on a rock,
+	 * a log or a steep slope can be more than a block above or below that, which Minecraft's
+	 * waypoint check never counts as arrived, so the mob circled the point until its stuck check
+	 * (5 s) gave up. Followed by horizontal distance instead (PathNavigationValheimMixin).
+	 */
+	public static boolean isOurs(@Nullable Path path) {
+		return path != null && OURS.contains(path);
+	}
 
 	private record Cell(int x, int y, int z, double floor) {
 	}
@@ -105,6 +117,7 @@ public final class TerrainPath {
 		}
 		if (path != null) {
 			RECENT.put(mob, new Object[] { now, target, path });
+			OURS.add(path);
 		}
 		return path;
 	}

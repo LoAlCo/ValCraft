@@ -7,6 +7,12 @@ import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.minecraft.client.renderer.entity.NoopRenderer;
 
 public final class ValCraftClient implements ClientModInitializer {
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private static void registerArmorParts(net.minecraft.client.renderer.entity.LivingEntityRenderer renderer,
+		net.fabricmc.fabric.api.client.rendering.v1.LivingEntityRenderLayerRegistrationCallback.RegistrationHelper helper) {
+		helper.register(new dev.valcraft.client.render.ArmorPartsLayer(renderer));
+	}
+
 	@Override
 	public void onInitializeClient() {
 		dev.valcraft.link.ValLink.announceRunning();
@@ -36,6 +42,12 @@ public final class ValCraftClient implements ClientModInitializer {
 		});
 		ClientTickEvents.END_CLIENT_TICK.register(ValClient::clientTick);
 		GuestLink.install();
+		// Valheim armor's 3D parts (horns, antlers, crests) on everything that wears armor.
+		net.fabricmc.fabric.api.client.rendering.v1.LivingEntityRenderLayerRegistrationCallback.EVENT.register((type, renderer, helper, context) -> {
+			if (renderer.getModel() instanceof net.minecraft.client.model.HumanoidModel<?>) {
+				registerArmorParts(renderer, helper);
+			}
+		});
 		// Multiplayer testing on one PC: VALCRAFT_LAN_PORT opens the world to LAN on that port as soon
 		// as it's loaded, and VALCRAFT_LAN_OFFLINE lets offline (dev) clients join it.
 		net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.JOIN.register((handler, sender, minecraft) -> {

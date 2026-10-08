@@ -24,6 +24,7 @@ public final class ValCraft implements ModInitializer {
 		ValCombat.init();
 		dev.valcraft.item.ValItems.init();
 		dev.valcraft.item.ValheimItems.init();
+		dev.valcraft.item.ValheimArmor.init();
 		dev.valcraft.net.ValNet.init();
 		ServerLifecycleEvents.SERVER_STARTED.register(ValCraft::configureServer);
 		net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(dev.valcraft.world.TimeSync::tick);
@@ -31,6 +32,18 @@ public final class ValCraft implements ModInitializer {
 		net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(dev.valcraft.world.MobSpawner::tick);
 		dev.valcraft.world.PlayerSync.init();
 		dev.valcraft.world.BuildSync.init();
+		dev.valcraft.world.ItemCarry.init();
+		// A torch sets what it hits alight for a moment, as Valheim's torch does (Valheim's creatures: ValheimActorEntity).
+		net.fabricmc.fabric.api.event.player.AttackEntityCallback.EVENT.register((player, level, hand, entity, hit) -> {
+			if (!level.isClientSide() && entity instanceof net.minecraft.world.entity.LivingEntity living && !living.fireImmune()
+				&& !(entity instanceof dev.valcraft.combat.ValheimActorEntity)) {
+				var held = player.getItemInHand(hand);
+				if (held.is(net.minecraft.world.item.Items.TORCH) || held.is(net.minecraft.world.item.Items.SOUL_TORCH)) {
+					living.igniteForTicks(30);
+				}
+			}
+			return net.minecraft.world.InteractionResult.PASS;
+		});
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
 			// First: the inventory shared across the two terrain saves (the kits check what's there).
 			dev.valcraft.world.PlayerSync.join(server, handler.getPlayer());

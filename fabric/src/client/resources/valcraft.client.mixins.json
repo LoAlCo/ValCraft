@@ -24,7 +24,10 @@
     "WindowMixin",
     "WorldOpenFlowsMixin",
     "ItemInHandMixin",
-    "BoatWaveTiltMixin"
+    "BoatWaveTiltMixin",
+    "HudAccessor",
+    "BossHealthOverlayAccessor",
+    "HudBossBarMixin"
   ],
   "injectors": {
     "defaultRequire": 1

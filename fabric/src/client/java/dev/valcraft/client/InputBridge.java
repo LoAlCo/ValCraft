@@ -85,6 +85,8 @@ public final class InputBridge {
 					giveBytes = null;
 				}
 			}
+			case Proto.IN_VALHEIM_FIRE -> valheimFire(minecraft, a / 8.0F, b / 8.0F, c / 8.0F);
+			case Proto.IN_MOB_HIT -> mobHit(minecraft, a, b / 100.0F, c);
 			case Proto.IN_OPEN_MENU -> {
 				if (minecraft.gui.screen() == null && minecraft.player != null) {
 					releaseAll();
@@ -117,6 +119,48 @@ public final class InputBridge {
 			ServerPlayer player = server.getPlayerList().getPlayer(uuid);
 			if (player != null) {
 				dev.valcraft.net.ValNet.giveOrTake(player, id, count);
+			}
+		});
+	}
+
+	/** A Valheim creature hit a Minecraft mob (its stand-in in Valheim took the hit). */
+	private static void mobHit(Minecraft minecraft, int entityId, float damage, int attacker) {
+		var server = minecraft.getSingleplayerServer();
+		if (minecraft.player == null) {
+			return;
+		}
+		if (server == null) {
+			if (net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.canSend(dev.valcraft.net.ValNet.MobHit.TYPE)) {
+				net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(new dev.valcraft.net.ValNet.MobHit(entityId, damage, attacker));
+			}
+			return;
+		}
+		var uuid = minecraft.player.getUUID();
+		server.execute(() -> {
+			ServerPlayer player = server.getPlayerList().getPlayer(uuid);
+			if (player != null) {
+				ValCombat.valheimHitMob(player.level(), entityId, damage, attacker);
+			}
+		});
+	}
+
+	/** A Valheim fire near the player: Minecraft's flammable blocks and mobs there catch fire (FireBridge). */
+	private static void valheimFire(Minecraft minecraft, float x, float y, float z) {
+		var server = minecraft.getSingleplayerServer();
+		if (minecraft.player == null) {
+			return;
+		}
+		if (server == null) {
+			if (net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.canSend(dev.valcraft.net.ValNet.ValheimFire.TYPE)) {
+				net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(new dev.valcraft.net.ValNet.ValheimFire(x, y, z));
+			}
+			return;
+		}
+		var uuid = minecraft.player.getUUID();
+		server.execute(() -> {
+			ServerPlayer player = server.getPlayerList().getPlayer(uuid);
+			if (player != null) {
+				dev.valcraft.world.FireBridge.valheimFire(player.level(), x, y, z);
 			}
 		});
 	}

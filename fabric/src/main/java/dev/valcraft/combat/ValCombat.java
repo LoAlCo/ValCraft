@@ -99,6 +99,13 @@ public final class ValCombat {
 		// Hits land during the tick (melee, sweeps, arrows, fire); send one combined hit per actor,
 		// to the Valheim of the player who landed it (or, for a mob's, the one that sees the creature).
 		for (ValheimActorEntity proxy : PROXIES.values()) {
+			if (proxy.burningNews()) {
+				// Valheim sets the creature burning (its flames, its damage over time): whatever lit the stand-in,
+				// lava, fire, a campfire, a fire charge, Fire Aspect, Flame, lightning, a torch.
+				float seconds = proxy.getRemainingFireTicks() / 20.0F;
+				ServerPlayer owner = server.getPlayerList().getPlayer(OWNER.getOrDefault(proxy.formId(), NOBODY));
+				dev.valcraft.net.ValNet.pushEvent(owner, Proto.EV_IGNITE, proxy.formId(), seconds, 0, 0, 0, 0);
+			}
 			java.util.UUID by = proxy.hitBy();
 			float[] hit = proxy.takeHit();
 			if (hit != null && (hit[0] > 0.0F || hit[3] > 0.0F)) {
@@ -117,6 +124,19 @@ public final class ValCombat {
 	}
 
 	private static final java.util.UUID NOBODY = new java.util.UUID(0L, 0L);
+
+	/**
+	 * A Valheim creature hit a Minecraft mob (Valheim's MobProxies: its stand-in for the mob took the
+	 * hit). The mob takes it as a hit from that creature's stand-in here, so it turns on it. Server thread.
+	 */
+	public static void valheimHitMob(ServerLevel level, int entityId, float valheimDamage, int attackerFormId) {
+		if (!(level.getEntity(entityId) instanceof LivingEntity mob) || !mob.isAlive() || valheimDamage <= 0.0F) {
+			return;
+		}
+		ValheimActorEntity attacker = PROXIES.get(attackerFormId);
+		DamageSource source = attacker != null ? level.damageSources().mobAttack(attacker) : level.damageSources().generic();
+		mob.hurtServer(level, source, valheimDamage / VALHEIM_TO_MC_DAMAGE);
+	}
 
 	/** Multiplayer: a guest's Valheim's creatures (ValNet.Actors). Server thread. */
 	public static void guestActors(java.util.UUID guest, List<ValLink.Actor> actors) {
@@ -190,19 +210,52 @@ public final class ValCombat {
 	}
 
 	/**
-	 * Valheim's NPCs press pressure plates and trip tripwires. Their stand-ins are placed, not moved
-	 * (no physics), so Minecraft never checks what they step into; do it for those blocks here.
+	 * Valheim's NPCs press pressure plates and trip tripwires, and burn in Minecraft's fire, lava and
+	 * campfires and on magma. Their stand-ins are placed, not moved (no physics), so Minecraft never
+	 * checks what they step into; do it for those blocks here.
 	 */
 	private static void stepOnTriggers(ServerLevel level, ValheimActorEntity proxy) {
 		var box = proxy.getBoundingBox().deflate(1.0E-5);
 		var from = net.minecraft.core.BlockPos.containing(box.minX, box.minY, box.minZ);
 		var to = net.minecraft.core.BlockPos.containing(box.maxX, box.maxY, box.maxZ);
+		boolean lava = false;
 		for (var pos : net.minecraft.core.BlockPos.betweenClosed(from, to)) {
 			var state = level.getBlockState(pos);
-			if (state.getBlock() instanceof net.minecraft.world.level.block.BasePressurePlateBlock
-				|| state.getBlock() instanceof net.minecraft.world.level.block.TripWireBlock) {
+			var block = state.getBlock();
+			if (block instanceof net.minecraft.world.level.block.BasePressurePlateBlock || block instanceof net.minecraft.world.level.block.TripWireBlock) {
 				state.entityInside(level, pos, proxy, net.minecraft.world.entity.InsideBlockEffectApplier.NOOP, true);
+			} else if (block instanceof net.minecraft.world.level.block.BaseFireBlock || block instanceof net.minecraft.world.level.block.CampfireBlock) {
+				state.entityInside(level, pos, proxy, new Applier(proxy), true);
 			}
+			lava |= level.getFluidState(pos).is(net.minecraft.tags.FluidTags.LAVA);
+		}
+		if (lava && !proxy.fireImmune()) {
+			proxy.lavaIgnite();
+			proxy.lavaHurt();
+		}
+		// Magma burns what stands on it (Minecraft calls stepOn for the block under the feet).
+		var below = net.minecraft.core.BlockPos.containing(proxy.getX(), box.minY - 0.05, proxy.getZ());
+		var under = level.getBlockState(below);
+		if (under.getBlock() instanceof net.minecraft.world.level.block.MagmaBlock) {
+			under.getBlock().stepOn(level, below, under, proxy);
+		}
+	}
+
+	/** Runs a block's effects on a stand-in right away (vanilla collects them while an entity moves). */
+	private record Applier(Entity entity) implements net.minecraft.world.entity.InsideBlockEffectApplier {
+		@Override
+		public void apply(net.minecraft.world.entity.InsideBlockEffectType type) {
+			type.effect().accept(this.entity);
+		}
+
+		@Override
+		public void runBefore(net.minecraft.world.entity.InsideBlockEffectType type, java.util.function.Consumer<Entity> effect) {
+			effect.accept(this.entity);
+		}
+
+		@Override
+		public void runAfter(net.minecraft.world.entity.InsideBlockEffectType type, java.util.function.Consumer<Entity> effect) {
+			effect.accept(this.entity);
 		}
 	}
 

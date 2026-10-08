@@ -149,6 +149,33 @@ namespace ValCraft.Link
             return false;
         }
 
+        // ValCraft: Minecraft's bosses near the player (BossTable): id, progress, kind, name.
+        public struct Boss { public uint id; public float progress; public uint kind; public string name; }
+
+        public static int ReadBosses(Boss[] into)
+        {
+            if (_base == null) return 0;
+            byte* b = _base + Proto.OffBossTable;
+            uint* seq = (uint*)b;
+            for (int attempt = 0; attempt < 16; attempt++)
+            {
+                uint s1 = Volatile.Read(ref *seq);
+                if ((s1 & 1) != 0) { Thread.SpinWait(8); continue; }
+                int n = Math.Min(*(int*)(b + 4), Math.Min(Proto.MaxBosses, into.Length));
+                for (int i = 0; i < n; i++)
+                {
+                    byte* r = b + 0x10 + i * 64;
+                    int len = 0;
+                    while (len < 47 && r[16 + len] != 0) len++;
+                    into[i] = new Boss { id = *(uint*)r, progress = *(float*)(r + 4), kind = *(uint*)(r + 8),
+                                         name = len == 0 ? "" : new string((sbyte*)(r + 16), 0, len, System.Text.Encoding.UTF8) };
+                }
+                Thread.MemoryBarrier();
+                if (Volatile.Read(ref *seq) == s1) return Math.Max(0, n);
+            }
+            return -1;  // torn: keep last frame's
+        }
+
         public static void WriteActors(ActorRecord[] records, int count)
         {
             if (_base == null) return;

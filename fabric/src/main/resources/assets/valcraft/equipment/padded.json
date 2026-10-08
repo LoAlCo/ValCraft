@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "valcraft:padded"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "valcraft:padded"
+      }
+    ]
+  }
+}

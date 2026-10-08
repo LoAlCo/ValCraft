@@ -136,14 +136,14 @@ namespace ValCraft
                 kb.onTextInput += c => { if (Route && Puppet.McScreenOpen) _text.Enqueue(c); };
                 _textHooked = true;
             }
-            if (kb != null && kb[ToggleKey].wasPressedThisFrame && Player.m_localPlayer)
+            if (kb != null && kb[ToggleKey].wasPressedThisFrame && Player.m_localPlayer && !SettingsMenu.IsOpen)
             {
                 Plugin.Paused = !Plugin.Paused;
                 ReleaseAll();
                 Plugin.Message(Plugin.Paused ? $"ValCraft: Valheim controls ({ToggleKey} for Minecraft)" : "ValCraft: Minecraft controls");
             }
 
-            if (kb != null && kb[TerrainKey].wasPressedThisFrame && Player.m_localPlayer && !Puppet.McScreenOpen) BlockTerrain.Toggle();
+            if (kb != null && kb[TerrainKey].wasPressedThisFrame && Player.m_localPlayer && !Puppet.McScreenOpen && !SettingsMenu.IsOpen) BlockTerrain.Toggle();
 
             if (!Route)
             {

@@ -84,6 +84,7 @@ Holding a Minecraft hoe or the **Build Hammer** (Valheim's build mode):
 - **Underwater:** diving under Valheim's sea (or into Minecraft water) gets fog, a tint, the surface seen from below, and muffled world sounds.
 - **Minecraft things:** entities (burning ones on fire), particles, chests and furnaces, TNT, arrows, fishing lines, leads, dropped items, and your own Minecraft body in third person.
 - **Combat:** Minecraft weapons and arrows hit Valheim creatures, and their hits come back as Minecraft damage, with armor and shields.
+- **Valheim creatures and Minecraft mobs:** Valheim's monsters notice Minecraft's monsters and fight them, its animals run from them, and tamed wolves and lox defend you; hits go both ways and each side turns on whoever hit it.
 - **Minecraft mobs:** they walk Valheim's terrain (around its rocks, logs and trees), and Minecraft's monsters and iron golems hunt Valheim's hostile creatures. How hard they plan their way is `[Mobs] Pathfinding` in the config (High, Balanced, Low) for slower PCs. With `[Mobs] NaturalSpawning` on they spawn by themselves: monsters at night and animals any time, picked by the Valheim biome (husks on the Plains, strays in the Mountains, slimes and witches in the Swamp, wither skeletons in the Ashlands, ...).
 - **Tools:** axes chop trees and pickaxes mine rocks, with Valheim's tool tiers. Shovels dig soil (dirt, grass, sand, snow); rock (steep slopes and paved ground) takes a pickaxe.
 - **Hoe:** a Minecraft hoe works like Valheim's: level ground, raise ground, paths and paved roads, from Valheim's own hoe menu. Stone costs come out of your Minecraft cobblestone.
@@ -91,16 +92,23 @@ Holding a Minecraft hoe or the **Build Hammer** (Valheim's build mode):
 - **Pausing:** pausing Valheim when you play alone pauses Minecraft too.
 - **Bosses:** the use key (G) at an altar, boss item stand or locked door offers its item for you, from your Minecraft inventory or the hidden Valheim inventory, and says where it came from. Every boss's summoning item and drops are ValCraft Minecraft items, redrawn from Valheim's icons (Deer Trophy, Ancient Seed, Withered Bone, Dragon Egg, Fuling Totem, Sealbreaker, Bell, Hard Antler, Swamp Key, Wishbone, Dragon Tear, Torn Spirit, Majestic Carapace, Kindled Ribs and the boss trophies). Boss hits are scaled like any other creature's.
 - **Valheim items:** 165 Valheim items with no Minecraft counterpart are ValCraft Minecraft items, redrawn from Valheim's icons and models: ores and metals (Flametal, Bloodgold, Black Metal Scrap, ...), every seed, every mead and mead base, and every weapon and tool. Meads drink like potions: their Minecraft effects, plus the Valheim mead's own effect on your Viking. Weapons and tools work like Minecraft's of their kind (axes chop, pickaxes mine), with their own damage, speed and durability, and their hits on Valheim's creatures do the Valheim weapon's own damage, frost, fire, poison and all.
+- **Valheim armor:** every Valheim armor set is Minecraft armor (helmet, chestplate, leggings and boots; Valheim's legs piece comes with its boots), from Leather to the Deep North sets, plus the Fishing Hat, the Crown of Valheim and the Dverger Circlet. Each looks like its Valheim set when worn, painted at twice Minecraft's resolution, with its 3D parts on top: the Drake helmet's horns, antlers, the bear's head, the Protector's wings, crests and shoulder plates. Its protection, toughness and durability come from Valheim's armor. Valheim armor you pick up or craft goes to the Minecraft inventory.
 - **3D weapons (optional):** the built-in **ValCraft 3D Weapons** resource pack (Options, Resource Packs) shows every Valheim weapon and tool as a blocky 3D model in your hand and on the ground, built from the Valheim weapon's shape and held at its real size; gems and runes glow. The inventory keeps the flat icons.
 - **Loot:** Valheim loot goes into the Minecraft inventory (wood becomes oak logs, stone becomes cobblestone, and so on). Edit the mapping in `BepInEx/config/ValCraft.loot.txt`.
 - **Block terrain (F8):** Valheim's ground becomes real Minecraft blocks you can mine and build into, by biome, with ores below. It uses its own Minecraft save per world; your inventory, stats and builds follow you across both (blocks you dig out of the terrain stay in block mode). The blocks go down to bedrock where Valheim's own digging stops (8 m under its ground), and they follow changes made to Valheim's ground in the meantime (TNT craters, digging, the hoe) without touching your builds.
 - **Time:** Minecraft's time of day follows Valheim's, and Minecraft's `/time set` and `/time add` move Valheim's clock forward too (the host's).
+- **Boss bars:** Minecraft's bosses (the Wither, the Ender Dragon, the Warden, the Elder Guardian) and raids get Valheim's boss health bar instead of Minecraft's.
+- **Fire:** Minecraft's fire, lava, fire charges, Fire Aspect and Flame set Valheim's creatures burning with Valheim's flames (Surtlings and other fire creatures don't mind), a torch hit sets any mob alight, and fire spreads between Minecraft's wooden builds and Valheim's wooden buildings and trees both ways.
+- **Light:** a torch in your hand lights the area around you, flickering like Valheim's torch (soul torches blue), and placed torches light Valheim's world like its own. Lava, magma, glowstone and other bright blocks glow.
+- **Weather:** Minecraft's weather follows Valheim's: rain or snow makes it rain (so monsters don't burn in the day), a thunderstorm makes it thunder.
+- **Items across F8:** items lying on the ground stay where they are when you switch block terrain on or off.
+- **Boats:** in a Minecraft boat, other players see your Viking sitting in it.
 - **Death:** dying in Minecraft kills your Viking too, with Valheim's death screen, tombstone and respawn.
 - **Multiplayer (experimental, not fully tested yet):** everyone with ValCraft in the same Valheim world plays in one Minecraft world, so you see each other's Minecraft avatars, blocks, mobs and items. It happens on its own: the first ValCraft player in opens their Minecraft world to the others through [e4mc](https://e4mc.link) (included), and everyone after joins it; nobody types an address. Each player keeps their own Valheim underneath, so each one's loot, building costs, meads, skills and hits on Valheim's creatures go to their own Viking, and the host's world knows the ground and creatures around every player, not just the host. Another ValCraft player's Viking is hidden (their Minecraft avatar is where they are). Players without ValCraft see Vikings as usual, and fights and loot sync with them. `/join <address>` and `/leave` still pick a world by hand.
 
 ### Settings
 
-In game: **ValCraft settings** in Valheim's pause menu (Esc) changes them on the spot, and its **Minecraft options** button opens Minecraft's own options. They're also in `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor, or the optional ConfigurationManager, see Controls):
+In game: **ValCraft settings** in Valheim's pause menu (Esc) changes them on the spot (the Minecraft and Debug ones under **Advanced settings**), and its **Minecraft options** button opens Minecraft's own options. They're also in `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor, or the optional ConfigurationManager, see Controls):
 
 | Setting | Does |
 |---|---|
@@ -126,15 +134,11 @@ In game: **ValCraft settings** in Valheim's pause menu (Esc) changes them on the
 ## Known issues
 
 - You can sometimes slip through the floor of a steep crater in Valheim terrain; Valheim's rescue puts you back on top.
-- Minecraft mobs sometimes spin in place for a moment when their path breaks.
-- Valheim creatures don't fight back at Minecraft mobs yet.
-- Minecraft items lying on the ground don't follow you across F8 (block terrain on/off).
-- Bows, arrows, shields, staffs, bombs, armor and capes don't have ValCraft versions yet (they stay in the Valheim inventory).
-- In first person, the biggest 3D weapons (the sledges) fill much of the view.
+- Bows, arrows, shields, staffs, bombs and capes don't have ValCraft versions yet (they stay in the Valheim inventory); nor do the cosmetic tunics, dresses and hats.
+- Valheim armor's upgrade levels and set bonuses don't carry over to its Minecraft version yet.
 - Building with the Build Hammer is experimental and not everything has been tried.
 - Not every Valheim material has a Minecraft counterpart yet (some trophies and late-game items). Pieces that need one take it from the Valheim inventory, so they may not be buildable for now. More will be added; you can add your own in `ValCraft.loot.txt`.
-- The Queen's Sealbreaker and Fader's bells are crafted from fragments at Valheim's own crafting stations, which hasn't been tried with ValCraft yet.
-- Other players see your Viking standing in the water while you're in a boat, and Valheim's creatures don't bump into boats.
+- Valheim's creatures don't bump into Minecraft boats.
 - Multiplayer: the shared Minecraft world is the host's, so it closes when the host leaves; everyone else goes back to their own and the next ValCraft player in hosts. Builds made in it are saved in the host's world.
 - Multiplayer: everyone should use the same terrain mode (F8); the shared world is in the host's.
 - The first time a world is opened to friends, Windows may ask whether Java may use the network. e4mc works either way.

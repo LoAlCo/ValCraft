@@ -95,6 +95,7 @@ namespace ValCraft
                 {
                     if (!c || c == player || c.GetZDOID().IsNone()) continue;
                     if (Multiplayer.SharesWorld(c)) continue;  // in our Minecraft world: their Minecraft player is what gets hit
+                    if (MobProxies.IsProxy(c)) continue;  // a Minecraft mob's own stand-in
                     float d = (c.transform.position - me).sqrMagnitude;
                     if (d < range * range) _near.Add((d, c));
                 }
@@ -158,8 +159,8 @@ namespace ValCraft
         }
 
         const uint ExplosionKeepsBlocks = 1;  // EV_EXPLOSION flags: broke no blocks (creeper, mobGriefing off)
-        const uint EvHitActor = 1, EvPlayerDied = 2, EvExplosion = 3, EvArrowStuck = 4, EvSkillUse = 5, EvValheimHit = 6, EvBuildSync = 7, EvSetTime = 9, EvConsume = 10, EvHitWeapon = 11;
-        const uint HitCritical = 1, HitProjectile = 2, HitSweep = 4, HitFire = 8, HitMob = 16;
+        const uint EvHitActor = 1, EvPlayerDied = 2, EvExplosion = 3, EvArrowStuck = 4, EvSkillUse = 5, EvValheimHit = 6, EvBuildSync = 7, EvSetTime = 9, EvConsume = 10, EvHitWeapon = 11, EvIgnite = 12;
+        const uint HitCritical = 1, HitProjectile = 2, HitSweep = 4, HitFire = 8, HitMob = 16, HitPureFire = 32;
         const uint WeaponUnarmed = 0, WeaponBlade = 1, WeaponAxe = 2, WeaponBlunt = 3, WeaponPierce = 4, WeaponArrow = 5;
 
         static void OnEvent(Player player, McEvent ev)
@@ -192,6 +193,9 @@ namespace ValCraft
                     break;
                 case EvConsume:
                     Consume(player, (int)ev.formId);
+                    break;
+                case EvIgnite:
+                    if (_byId.TryGetValue(ev.formId, out var burning) && burning && !burning.IsDead()) Ignite(burning, ev.a);
                     break;
                 case EvSetTime:
                     SetTime(ev.a, ev.b);
@@ -319,6 +323,13 @@ namespace ValCraft
             return _digPrefab;
         }
 
+        // A full hit of a Minecraft sword of each tier (1 wood .. 6 netherite), in Valheim damage: about
+        // the one-handed Valheim weapons of the matching tier (flint, bronze, iron, black metal, ...).
+        static readonly float[] TierDamage = { 0f, 12f, 35f, 45f, 55f, 90f, 120f };
+
+        // Axes swing slower and hit harder; pickaxes, shovels and hoes are tools first.
+        static float KindFactor(int kind) => kind == 2 ? 1.2f : kind == 3 ? 0.6f : 1f;
+
         // Set by EvHitWeapon: the next hit was made with a ValCraft version of this Valheim weapon.
         static GameObject _hitWeapon;
         static float _hitWeaponBase;
@@ -328,7 +339,20 @@ namespace ValCraft
             var weapon = _hitWeapon ? _hitWeapon.GetComponent<ItemDrop>()?.m_itemData.m_shared : null;
             float weaponBase = _hitWeaponBase;
             _hitWeapon = null;
+            uint weaponClass = ev.weapon & 0xFF, tool = ev.weapon >> 8;
             float amount = ev.a * DamageScale.Value;
+            bool fromMob = (ev.flags & HitMob) != 0;
+            if (tool != 0 && weapon == null && !fromMob)
+            {
+                // A Minecraft tool hits like the Valheim weapons of its tier (wood ~ flint, stone ~ bronze,
+                // iron ~ iron, diamond ~ black metal, netherite beyond): Minecraft's damage barely grows
+                // with the material, Valheim's creatures' health does. Scaled by how much of a full hit
+                // this was (crits, Sharpness, Strength, cooldown). DamageScale 4 (the default) = as listed.
+                int tier = (int)(tool & 0xF), kind = (int)((tool >> 4) & 0xF);
+                float full = ((tool >> 8) & 0xFF) / 10f;
+                if (tier >= 1 && tier < TierDamage.Length && full > 0f)
+                    amount = TierDamage[tier] * KindFactor(kind) * (ev.a / full) * (DamageScale.Value / 4f);
+            }
             var hit = new HitData();
             // A Minecraft mob's hit (zombie, skeleton's arrow, creeper): no attacker, so the creature
             // doesn't turn on the player for it, and no skill for the player.
@@ -342,7 +366,7 @@ namespace ValCraft
             hit.m_blockable = hit.m_dodgeable = false;
             hit.m_ranged = (ev.flags & HitProjectile) != 0;
             hit.m_staggerMultiplier = (ev.flags & HitCritical) != 0 ? 2f : 1f;
-            switch (ev.weapon)
+            switch (weaponClass)
             {
                 case WeaponBlade: hit.m_damage.m_slash = amount; hit.m_skill = Skills.SkillType.Swords; break;
                 case WeaponAxe: hit.m_damage.m_slash = amount; hit.m_skill = Skills.SkillType.Axes; break;
@@ -364,9 +388,38 @@ namespace ValCraft
                 hit.m_backstabBonus = weapon.m_backstabBonus;
                 amount = d.GetTotalDamage();
             }
+            if ((ev.flags & HitPureFire) != 0)
+            {
+                // lava, fire, a fireball, a magma block: fire alone, so Valheim's resistances apply (Surtlings are immune)
+                hit.m_damage = new HitData.DamageTypes { m_fire = ev.a * DamageScale.Value };
+                hit.m_skill = Skills.SkillType.None;
+                hit.m_hitType = HitData.HitType.Burning;
+                hit.m_pushForce = 0f;
+            }
             if (byMob) hit.m_skill = Skills.SkillType.None;
             target.Damage(hit);
+            // a Minecraft mob's hit: the creature turns on that mob's stand-in (MobProxies)
+            if (byMob && tool != 0) MobProxies.Provoke(target, (int)tool);
             Plugin.Log($"hit {target.m_name} for {amount:F1} (Minecraft {ev.a:F1}, weapon {ev.weapon}, flags {ev.flags})");
+        }
+
+        // Burning in Minecraft (lava, fire, a fire charge, Fire Aspect, Flame, a torch, ...) sets the
+        // creature burning the Valheim way, for as long as Minecraft would: Valheim's flames on it and
+        // its fire damage over time, Minecraft's 1 a second (times [Combat] DamageScale). Fire-proof
+        // creatures (Surtlings, the Ashlands) shrug it off as they do Valheim's fire.
+        public static float BurnSeconds;  // read by BurnTimePatch while this applies its hit
+
+        static void Ignite(Character target, float seconds)
+        {
+            seconds = Mathf.Clamp(seconds, 1f, 10f);
+            var hit = new HitData();
+            hit.m_damage.m_fire = seconds * DamageScale.Value;
+            hit.m_point = target.GetCenterPoint();
+            hit.m_hitType = HitData.HitType.Burning;
+            hit.m_blockable = hit.m_dodgeable = false;
+            BurnSeconds = seconds;
+            try { target.Damage(hit); }
+            finally { BurnSeconds = 0f; }
         }
 
         // TNT and creepers: hurt Valheim creatures and break trees, rocks and building pieces like a

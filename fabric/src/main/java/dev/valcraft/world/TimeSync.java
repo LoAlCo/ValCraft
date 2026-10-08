@@ -43,11 +43,38 @@ public final class TimeSync {
 		ValCraft.LOG.info("ValCraft: /time: Valheim goes to {}:{} (+{} days)", (int) hour, String.format("%02d", (int) (hour % 1 * 60)), days);
 	}
 
+	private static int weatherSet = -1;
+
+	/**
+	 * Minecraft's weather follows Valheim's (its own is stopped, see ValCraft.configureServer): rain
+	 * when it rains or snows where the player is, thunder in a thunderstorm, clear otherwise. Minecraft
+	 * isn't drawn, so this is what its rain does: monsters out in it don't burn in the day, fire goes
+	 * out, crops get water, and so on. Valheim's interiors are dry.
+	 */
+	private static void weather(MinecraftServer server) {
+		int want = (STATE.flags & Proto.VAL_THUNDER) != 0 ? 2 : (STATE.flags & Proto.VAL_WET) != 0 ? 1 : 0;
+		var level = server.overworld();
+		int now = level.isThundering() ? 2 : level.isRaining() ? 1 : 0;
+		if (want == now && want == weatherSet) {
+			return;
+		}
+		weatherSet = want;
+		applying = true;
+		try {
+			server.getCommands().performPrefixedCommand(server.createCommandSourceStack().withSuppressedOutput(),
+				want == 2 ? "weather thunder" : want == 1 ? "weather rain" : "weather clear");
+		} finally {
+			applying = false;
+		}
+		ValCraft.LOG.info("ValCraft: Minecraft's weather follows Valheim's: {}", want == 2 ? "thunderstorm" : want == 1 ? "rain" : "clear");
+	}
+
 	/** Server thread, every tick. */
 	public static void tick(MinecraftServer server) {
 		if (++ticks % 20 != 0 || !ValLink.active() || !ValLink.readValState(STATE) || !STATE.inGame()) {
 			return;
 		}
+		weather(server);
 		// Minecraft time 0 is 06:00, 6000 noon, 18000 midnight.
 		long target = Math.floorMod(Math.round((STATE.gameHour - 6.0F) * 1000.0F), 24000L);
 		var level = server.overworld();

@@ -143,11 +143,14 @@ TrophyFader = valcraft:fader_trophy
             ("DragonTear = minecraft:ghast_tear", "DragonTear = valcraft:dragon_tear"),
             // 0.5.5 named the Queen's key by its display name; its prefab is DvergrKey
             ("Sealbreaker = minecraft:ominous_trial_key", "DvergrKey = valcraft:sealbreaker"),
+            // a 0.5.6 build named Fader's drop before its item was (Kindled Ribs)
+            ("FaderDrop = valcraft:fader_drop", "FaderDrop = valcraft:kindled_ribs"),
         };
 
         // Blocks added to the loot table over time: appended once to older tables (see Load).
         static readonly (string marker, string lines)[] Additions = System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Concat(
-            new[] { (BuildingMaterialsMarker, BuildingMaterials), (BossItemsMarker, BossItems), (BossDropsMarker, BossDrops) }, ValheimItemsLoot.Blocks));
+            new[] { (BuildingMaterialsMarker, BuildingMaterials), (BossItemsMarker, BossItems), (BossDropsMarker, BossDrops) },
+            System.Linq.Enumerable.Append(ValheimItemsLoot.Blocks, (ValheimArmorLoot.Marker, ValheimArmorLoot.Lines))));
 
         // Added in 0.5.3 for Valheim building (the Build Hammer): its costs are paid in these, and
         // picking them up in Valheim gives them. Appended once to older loot tables (see Load).
@@ -200,16 +203,26 @@ AskHide = minecraft:rabbit_hide
                     string updated = text;
                     foreach (var (from, to) in Replaced) updated = updated.Replace(from, to);
                     if (updated != text) { File.WriteAllText(_path, updated); text = updated; }
+                    // A block the table already has may have grown since it was added (a block written by an
+                    // earlier build of that version): its new lines go in too, under a heading of their own.
+                    var later = new StringBuilder();
                     foreach (var (marker, lines) in Additions)
                     {
-                        if (text.Contains(marker)) continue;
-                        var add = new StringBuilder(Environment.NewLine + marker + Environment.NewLine);
+                        bool present = text.Contains(marker);
+                        var add = new StringBuilder();
                         foreach (var l in lines.Split('\n'))
                         {
                             int e = l.IndexOf('=');
-                            if (e > 0 && !have.Contains(l.Substring(0, e).Trim())) add.Append(l.Trim()).Append(Environment.NewLine);
+                            if (e <= 0) continue;
+                            if (have.Add(l.Substring(0, e).Trim())) add.Append(l.Trim()).Append(Environment.NewLine);
                         }
-                        File.AppendAllText(_path, add.ToString());
+                        if (!present) File.AppendAllText(_path, Environment.NewLine + marker + Environment.NewLine + add);
+                        else later.Append(add);
+                    }
+                    if (later.Length > 0)
+                    {
+                        File.AppendAllText(_path, Environment.NewLine + "# added to the sections above since they were written (ValCraft)" + Environment.NewLine + later);
+                        Plugin.Log("loot bridge: added the lines older ValCraft sections were missing: " + later.ToString().Replace(Environment.NewLine, "; ").TrimEnd(' ', ';'));
                     }
                 }
                 _map.Clear();
@@ -284,7 +297,7 @@ AskHide = minecraft:rabbit_hide
 
         // kInGive {code 0, a = count (negative: take), b = id length} then ceil(len / 12) kInGiveData events with
         // 12 bytes of the UTF-8 id each in a, b, c.
-        static void Give(string id, int count)
+        public static void Give(string id, int count)
         {
             var bytes = Encoding.UTF8.GetBytes(id);
             Shm.PushInput(Proto.InGive, 0, count, bytes.Length, 0);

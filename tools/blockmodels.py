@@ -35,6 +35,9 @@ def noise(x, y, seed):
     return ((n ^ (n >> 16)) & 0xFFFF) / 65535.0
 
 
+# First person: no weapon looks thicker than this front to back (units after scaling: a sledge's head).
+FP_THICK = 3.0
+
 class Mat:
     """A material: three tones (light, mid, dark) and a style that paints a face with them."""
 
@@ -171,38 +174,7 @@ class Model:
 
     def build(self, scale=None):
         self.separate()
-        # one face per box side, sized in texels
-        faces = []
-        for i, ((x0, y0, z0), (x1, y1, z1), mat) in enumerate(self.boxes):
-            w, h, d = x1 - x0, y1 - y0, z1 - z0
-            dims = {"north": (w, h), "south": (w, h), "east": (d, h), "west": (d, h), "up": (w, d), "down": (w, d)}
-            for f in FACES:
-                fw, fh = dims[f]
-                faces.append((i, f, max(1, math.ceil(fw - 1e-6)), max(1, math.ceil(fh - 1e-6))))
-        # shelf-pack the faces into a square texture
-        size = 16
-        while True:
-            placed, x, y, row = {}, 0, 0, 0
-            ok = True
-            for i, f, fw, fh in sorted(faces, key=lambda t: -t[3]):
-                if x + fw > size:
-                    x, y, row = 0, y + row, 0
-                if y + fh > size or fw > size:
-                    ok = False
-                    break
-                placed[(i, f)] = (x, y, fw, fh)
-                x += fw
-                row = max(row, fh)
-            if ok:
-                break
-            size *= 2
-        tex = [[(0, 0, 0, 0)] * size for _ in range(size)]
-        for (i, f), (x, y, fw, fh) in placed.items():
-            mat = self.boxes[i][2]
-            px = mat.paint(fw, fh, f, i * 7 + FACES.index(f))
-            for yy in range(fh):
-                for xx in range(fw):
-                    tex[y + yy][x + xx] = px[yy][xx] + (255,)
+        size, placed, tex = pack(self.boxes)
         # elements: stood up along y, centred on x = z = 8, the whole weapon centred on y = 8
         k = 16 / size
         # its size in the hand: its real length (Minecraft holds a sword sprite at 0.85 in third person)
@@ -222,12 +194,17 @@ class Model:
             if mat.glow:
                 el["light_emission"] = mat.glow
             elements.append(el)
-        # in first person no bigger than a little over Minecraft's own, or a greatsword fills the view
+        # in first person no bigger than a little over Minecraft's own, or a greatsword fills the view;
+        # block-like heads (sledges) smaller still, by how thick they are front to back (blades,
+        # axes and picks are flat that way, so they keep their size)
+        thick = max(max(abs(z0), abs(z1)) for (_, _, z0), (_, _, z1), _ in self.boxes) * 2
+        fp = 0.68 * min(s, 0.75)
+        fp = min(fp, FP_THICK / max(thick, 1e-6))
         display = {
             "thirdperson_righthand": {"rotation": [0, -90, 55], "translation": [0, 4.0, 0.5], "scale": [0.85 * s] * 3},
             "thirdperson_lefthand": {"rotation": [0, 90, -55], "translation": [0, 4.0, 0.5], "scale": [0.85 * s] * 3},
-            "firstperson_righthand": {"rotation": [0, -90, 25], "translation": [1.13, 3.2, 1.13], "scale": [0.68 * min(s, 0.75)] * 3},
-            "firstperson_lefthand": {"rotation": [0, 90, -25], "translation": [1.13, 3.2, 1.13], "scale": [0.68 * min(s, 0.75)] * 3},
+            "firstperson_righthand": {"rotation": [0, -90, 25], "translation": [1.13, 3.2, 1.13], "scale": [fp] * 3},
+            "firstperson_lefthand": {"rotation": [0, 90, -25], "translation": [1.13, 3.2, 1.13], "scale": [fp] * 3},
             "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.5 * s] * 3},
             "head": {"rotation": [0, 180, 0], "translation": [0, 13, 7], "scale": [s] * 3},
             "fixed": {"rotation": [0, 180, 0], "translation": [0, 0, 0], "scale": [s] * 3},
@@ -250,6 +227,43 @@ class Model:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         json.dump(item, open(path, "w", encoding="utf-8"), indent=2)
         return len(elements), size
+
+
+def pack(boxes):
+    """Paints every face of the boxes and packs them into one square texture: (size, {(box, face): (x, y, w, h)}, pixels)."""
+    # one face per box side, sized in texels
+    faces = []
+    for i, ((x0, y0, z0), (x1, y1, z1), mat) in enumerate(boxes):
+        w, h, d = x1 - x0, y1 - y0, z1 - z0
+        dims = {"north": (w, h), "south": (w, h), "east": (d, h), "west": (d, h), "up": (w, d), "down": (w, d)}
+        for f in FACES:
+            fw, fh = dims[f]
+            faces.append((i, f, max(1, math.ceil(fw - 1e-6)), max(1, math.ceil(fh - 1e-6))))
+    # shelf-pack the faces into a square texture
+    size = 16
+    while True:
+        placed, x, y, row = {}, 0, 0, 0
+        ok = True
+        for i, f, fw, fh in sorted(faces, key=lambda t: -t[3]):
+            if x + fw > size:
+                x, y, row = 0, y + row, 0
+            if y + fh > size or fw > size:
+                ok = False
+                break
+            placed[(i, f)] = (x, y, fw, fh)
+            x += fw
+            row = max(row, fh)
+        if ok:
+            break
+        size *= 2
+    tex = [[(0, 0, 0, 0)] * size for _ in range(size)]
+    for (i, f), (x, y, fw, fh) in placed.items():
+        mat = boxes[i][2]
+        px = mat.paint(fw, fh, f, i * 7 + FACES.index(f))
+        for yy in range(fh):
+            for xx in range(fw):
+                tex[y + yy][x + xx] = px[yy][xx] + (255,)
+    return size, placed, tex
 
 
 def write_png(path, tex):

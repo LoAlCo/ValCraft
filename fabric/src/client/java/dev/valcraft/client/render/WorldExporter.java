@@ -61,6 +61,9 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * and the targeted-block outline. Render thread only.
  */
 public final class WorldExporter {
+	/** A block shining at least this much (lava, glowstone: 15; torches: 14) glows in Valheim (vertex flag bit 3). */
+	private static final int GLOW_EMISSION = 12;
+
 	private static final int SECTIONS_PER_FRAME = 12;
 	private static final double ENTITY_RANGE = 96.0;
 
@@ -222,6 +225,9 @@ public final class WorldExporter {
 							LIGHTS.put((byte) x).put((byte) y).put((byte) z).put((byte) emission).putInt(BlockLightColors.of(state));
 							lightCount++;
 						}
+						// Blocks that shine (lava, magma, glowstone, fire, sea lanterns...) glow in Valheim: drawn
+						// bright whatever Valheim's light and shadows, and without ambient occlusion's dark patches.
+						MESH.glow = emission >= GLOW_EMISSION;
 						FluidState fluid = state.getFluidState();
 						if (!fluid.isEmpty()) {
 							// Valheim ground in the cell: the fluid is drawn in the space above it.
@@ -521,8 +527,10 @@ public final class WorldExporter {
 		 * Valheim lights the face with. 0 leaves it without a normal (plants and other quads Minecraft
 		 * doesn't shade by direction).
 		 */
-		private static int flags(boolean translucent, Direction normal) {
-			return (translucent ? 2 : 1) | (normal == null ? 0 : (normal.ordinal() + 1) << 4);
+		boolean glow;
+
+		private int flags(boolean translucent, Direction normal) {
+			return (translucent ? 2 : 1) | (this.glow ? 8 : 0) | (normal == null ? 0 : (normal.ordinal() + 1) << 4);
 		}
 
 		/** Takes Minecraft's fixed face brightness back out of a colour, leaving tint and ambient occlusion. */

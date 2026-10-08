@@ -321,12 +321,24 @@ namespace ValCraft
             Prof.Stop("puppet/water", pt);
         }
 
+        // Valheim's weather for Minecraft's (WeatherSync.java): rain or snow outside, a thunderstorm.
+        // Dungeons and other interiors are dry.
+        static uint WeatherBits(Player player)
+        {
+            if (player == null || !EnvMan.instance || Coords.Interior) return 0u;
+            var env = EnvMan.instance.GetCurrentEnvironment();
+            if (env == null) return 0u;
+            bool wet = env.m_isWet || EnvMan.IsWet();
+            bool thunder = env.m_name != null && env.m_name.IndexOf("Thunder", System.StringComparison.OrdinalIgnoreCase) >= 0;
+            return (wet || thunder ? Proto.ValWet : 0u) | (thunder ? Proto.ValThunder : 0u);
+        }
+
         static void WriteState(Player player, bool loading, bool menu)
         {
             var st = new ValState();
             st.flags = (player != null ? Proto.ValInGame : 0u) | (menu ? Proto.ValMenuOpen : 0u) | (loading ? Proto.ValLoading : 0u) |
                        (BlockTerrain.On ? Proto.ValBlockTerrain : 0u) | Combat.MobPathingBits | Combat.MobSpawningBits |
-                       (player != null && ZNet.instance && Game.IsPaused() ? Proto.ValPaused : 0u);
+                       (player != null && ZNet.instance && Game.IsPaused() ? Proto.ValPaused : 0u) | WeatherBits(player);
             CameraSettings.Write(ref st);
             Multiplayer.Write(ref st);
             st.worldId = _worldId;

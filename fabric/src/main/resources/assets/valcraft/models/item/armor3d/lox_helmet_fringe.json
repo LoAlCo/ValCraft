@@ -1,0 +1,80 @@
+{
+ "texture_size": [
+  32,
+  32
+ ],
+ "textures": {
+  "0": "valcraft:item/armor3d/lox_helmet_fringe",
+  "particle": "valcraft:item/armor3d/lox_helmet_fringe"
+ },
+ "elements": [
+  {
+   "from": [
+    -0.5,
+    11,
+    -1
+   ],
+   "to": [
+    16.5,
+    16.5,
+    3
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.0,
+      0.0,
+      8.5,
+      3.0
+     ],
+     "texture": "#0"
+    },
+    "east": {
+     "uv": [
+      8.5,
+      0.0,
+      10.5,
+      3.0
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      0.0,
+      3.0,
+      8.5,
+      6.0
+     ],
+     "texture": "#0"
+    },
+    "west": {
+     "uv": [
+      8.5,
+      3.0,
+      10.5,
+      6.0
+     ],
+     "texture": "#0"
+    },
+    "up": {
+     "uv": [
+      0.0,
+      6.0,
+      8.5,
+      8.0
+     ],
+     "texture": "#0"
+    },
+    "down": {
+     "uv": [
+      0.0,
+      8.0,
+      8.5,
+      10.0
+     ],
+     "texture": "#0"
+    }
+   }
+  }
+ ]
+}

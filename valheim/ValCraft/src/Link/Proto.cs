@@ -27,6 +27,8 @@ namespace ValCraft.Link
         public const long OffActorTable = 0x12000;
         public const long OffEventRing = 0x17000;
         public const long OffWorldEntities = 0x1C000;
+        public const long OffBossTable = 0x1FD00;  // ValCraft: Minecraft's bosses (BossTable)
+        public const int MaxBosses = 8;
         public const long OffRenderRing = OffOverlayPixels + OverlaySlotBytes * OverlaySlots;
         public const long RenderRingBytes = 64L << 20;
         public const long MappingBytes = OffRenderRing + RenderRingBytes;
@@ -40,6 +42,7 @@ namespace ValCraft.Link
         public const int ValMobPathingShift = 4;
         public const uint ValMobSpawning = 1u << 7;  // ValCraft: [Mobs] NaturalSpawning (MobSpawner.java)
         public const uint ValMobGriefing = 1u << 8;  // ValCraft: [Explosions] CreeperGriefing (Minecraft's mobGriefing)
+        public const uint ValWet = 1u << 9, ValThunder = 1u << 10;  // ValCraft: Valheim's weather for Minecraft's (WeatherSync)
         public const uint ValPaused = 1u << 6;  // Valheim's game is paused (single player, menu open): Minecraft pauses too
 
         // McState.flags
@@ -56,6 +59,9 @@ namespace ValCraft.Link
         public const uint McHoldingHoe = 1u << 10;     // ValCraft: a hoe / the Build Hammer in the main hand (BuildTools)
         public const uint McCreative = 1u << 11;       // creative mode: building costs nothing
         public const uint McHoldingHammer = 1u << 12;
+        public const uint McHoldingLight = 1u << 13;      // ValCraft: a torch or lantern in hand (HeldLight)
+        public const uint McHoldingSoulLight = 1u << 14;  // ...a soul one: blue
+        public const uint McInBoat = 1u << 15;            // ValCraft: in a Minecraft boat (BoatSeat)
         // ValCraft multiplayer (ValState.mpMode, McState.mpState)
         public const uint MpOwn = 0, MpHost = 1, MpJoin = 2;
         public const uint MpPublished = 1u << 0, MpInFriendWorld = 1u << 1;
@@ -83,6 +89,8 @@ namespace ValCraft.Link
         public const ushort InOpenMenu = 8;
         public const ushort InGive = 9;        // ValCraft: give the player a Minecraft item: a = count, b = id length; InGiveData follows
         public const ushort InGiveData = 10;   // 12 bytes of the UTF-8 item id in a, b, c
+        public const ushort InValheimFire = 11; // ValCraft: a Valheim fire at a, b, c (MC coords x 8): Minecraft catches fire there (FireBridge)
+        public const ushort InMobHit = 12;      // ValCraft: a Valheim creature hit a Minecraft mob: a = entity id, b = damage x 100, c = attacker form id
 
         // actor table
         public const int MaxActors = 256;
@@ -124,6 +132,7 @@ namespace ValCraft.Link
         public const uint RenViewModel = 11;
         public const uint RenInventory = 12;  // ValCraft: Minecraft's inventory, for building costs (BuildTools)
         public const uint RenItemIcons = 13;  // ValCraft: every Minecraft item's icon in the atlas (BuildTools' cost list)
+        public const uint RenMobs = 14;       // ValCraft: Minecraft's mobs near the player (MobProxies)
     }
 
     [StructLayout(LayoutKind.Sequential)]

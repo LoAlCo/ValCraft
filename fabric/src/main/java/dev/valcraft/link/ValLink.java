@@ -495,6 +495,35 @@ public final class ValLink {
 		return new String(bytes, 0, n, StandardCharsets.UTF_8);
 	}
 
+	// ---- boss bars (write) -----------------------------------------------------------------
+
+	public record Boss(int id, float progress, int kind, String name) {
+	}
+
+	/** Minecraft's bosses near the player, for Valheim's boss health bars. */
+	public static void writeBosses(java.util.List<Boss> bosses) {
+		MemorySegment s = shm;
+		if (s == null) {
+			return;
+		}
+		long b = OFF_BOSS_TABLE;
+		int seq = s.get(JAVA_INT, b);
+		INT.setRelease(s, b, seq + 1);
+		VarHandle.storeStoreFence();
+		int n = Math.min(bosses.size(), MAX_BOSSES);
+		s.set(JAVA_INT, b + 4, n);
+		for (int i = 0; i < n; i++) {
+			Boss boss = bosses.get(i);
+			long r = b + BOSS_RECORDS + (long) i * BOSS_RECORD_BYTES;
+			s.set(JAVA_INT, r, boss.id());
+			s.set(JAVA_FLOAT, r + 4, boss.progress());
+			s.set(JAVA_INT, r + 8, boss.kind());
+			s.set(JAVA_INT, r + 12, 0);
+			writeString(s, r + 16, BOSS_NAME_BYTES, boss.name());
+		}
+		INT.setRelease(s, b, seq + 2);
+	}
+
 	// ---- event ring (produce) --------------------------------------------------------------
 
 	/** Queues an event for Valheim. Safe from any thread. Drops the event if Valheim is a full ring behind. */

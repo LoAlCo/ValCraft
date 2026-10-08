@@ -6,6 +6,22 @@ namespace ValCraft
 {
     // Minecraft moves the player: Valheim's own motion (walking, gravity, swimming) is skipped and
     // its body is put where Minecraft's physics says, with no momentum or fall damage of its own.
+    // Minecraft fire (Combat.Ignite) burns a Valheim creature for as long as Minecraft would (a torch
+    // only for a moment), and fire that keeps being renewed (standing in lava) tops the burn up to
+    // that instead of piling more on. Only where this game owns the creature, as Valheim applies hits there.
+    [HarmonyPatch(typeof(SE_Burning), nameof(SE_Burning.AddFireDamage))]
+    static class BurnTimePatch
+    {
+        static readonly AccessTools.FieldRef<SE_Burning, float> Left = AccessTools.FieldRefAccess<SE_Burning, float>("m_fireDamageLeft");
+
+        static void Prefix(SE_Burning __instance, ref float damage)
+        {
+            if (Combat.BurnSeconds <= 0f) return;
+            __instance.m_ttl = Combat.BurnSeconds;
+            damage = Mathf.Max(0f, damage - Left(__instance));
+        }
+    }
+
     [HarmonyPatch(typeof(Character), "UpdateMotion")]
     static class MotionPatch
     {

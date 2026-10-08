@@ -170,11 +170,23 @@ namespace ValCraft
             _pending[id] = spent + count;
         }
 
-        static int McHave(string id)
+        internal static bool InPlacement => _inPlacement;
+
+        internal static int McHave(string id)
         {
             _mcItems.TryGetValue(id, out int have);
             _pending.TryGetValue(id, out int spent);
             return Math.Max(0, have - spent);
+        }
+
+        // Spend Minecraft items (crafting at a Valheim station, see CraftingCosts): counted as gone until
+        // Minecraft's inventory next arrives.
+        internal static void Spend(string id, int count)
+        {
+            if (count <= 0) return;
+            _pending.TryGetValue(id, out int spent);
+            _pending[id] = spent + count;
+            Loot.Take(id, count);
         }
 
         // A Valheim cost in Minecraft items, or false when the loot table doesn't map that material.

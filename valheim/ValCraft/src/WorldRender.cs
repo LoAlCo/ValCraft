@@ -20,6 +20,7 @@ namespace ValCraft
     public static unsafe class WorldRender
     {
         const int MaxLights = 12;
+        const int MaxShadowedFlames = 2;  // shadows cost: only the nearest flames cast them, as Valheim's torches do
         static GameObject _root;
         static Texture2D _atlas;
         static bool _atlasDirty;
@@ -46,7 +47,18 @@ namespace ValCraft
             public int sx, sy, sz;
         }
 
-        struct Emitter { public Vector3 pos; public int level; public Color color; public int kind; }
+        struct Emitter { public Vector3 pos; public int level; public Color color; public int kind; public int hazard; }
+
+        public const int HazardFire = 1, HazardLava = 2, HazardMagma = 3;
+
+        /** Minecraft's burning blocks (fire, campfires, lava) Valheim knows of: block centres, Minecraft coordinates. */
+        public static void BurningBlocks(List<(Vector3 pos, int hazard)> into)
+        {
+            into.Clear();
+            foreach (var list in _emitters.Values)
+                foreach (var e in list)
+                    if (e.hazard == HazardFire || e.hazard == HazardLava) into.Add((e.pos, e.hazard));
+        }
 
         public static Transform Root => _root ? _root.transform : null;
         public static int AtlasWidth => _atlas ? _atlas.width : 0;
@@ -133,6 +145,7 @@ namespace ValCraft
                     case Proto.RenSection: OnSection(p, bytes); break;
                     case Proto.RenSolids: OnSolids(p, bytes); break;
                     case Proto.RenLights: OnLights(p, bytes); break;
+                    case Proto.RenMobs: MobProxies.OnMobs(p, bytes); break;
                     case Proto.RenTexture: SceneRender.OnTexture(p, bytes); break;
                     case Proto.RenScene: SceneRender.OnScene(_root.transform, p, bytes); break;
                     case Proto.RenAvatar: SceneRender.OnAvatar(_root.transform, p, bytes); break;
@@ -260,6 +273,7 @@ namespace ValCraft
                 // Per triangle: which layer, and which tint (the brightest corner's colour).
                 uint flags = v[t].flags;
                 uint layer = (flags & 2) != 0 ? 1u : 0u;
+                bool glow = (flags & 8) != 0;  // a shining block (lava, glowstone...): emissive, untinted
                 Color32 best = default;
                 int bestSum = -1;
                 for (int k = 0; k < 3; k++)
@@ -269,7 +283,7 @@ namespace ValCraft
                     int sum = cc.r + cc.g + cc.b;
                     if (sum > bestSum) { bestSum = sum; best = cc; }
                 }
-                long group = ((long)layer << 32) | BlockMaterials.Quantise(best);
+                long group = ((long)layer << 32) | (glow ? 1L << 33 : 0L) | (glow ? 0xFFFFFFFFu : BlockMaterials.Quantise(best));
                 if (!_groups.TryGetValue(group, out var list)) _groups[group] = list = new List<int>();
                 for (int k = 0; k < 3; k++)
                 {
@@ -333,8 +347,8 @@ namespace ValCraft
             for (int i = 0; i < mats.Length; i++)
             {
                 long k = s.submeshKeys[i];
-                var layer = (k >> 32) != 0 ? BlockMaterials.Layer.Translucent : BlockMaterials.Layer.Cutout;
-                mats[i] = BlockMaterials.Get(layer, (uint)(k & 0xFFFFFFFF));
+                var layer = ((k >> 32) & 1) != 0 ? BlockMaterials.Layer.Translucent : BlockMaterials.Layer.Cutout;
+                mats[i] = BlockMaterials.Get(layer, (uint)(k & 0xFFFFFFFF), null, ((k >> 33) & 1) != 0);
             }
             s.renderer.sharedMaterials = mats;
             s.materialsSet = true;
@@ -534,6 +548,7 @@ namespace ValCraft
                     level = e[3],
                     color = new Color32((byte)c, (byte)(c >> 8), (byte)(c >> 16), 255),
                     kind = (int)((c >> 24) & 0xF),
+                    hazard = (int)((c >> 28) & 0xF),
                 });
             }
             _emitters[key] = list;
@@ -568,6 +583,10 @@ namespace ValCraft
                 _lights.Add(l);
             }
             float time = Time.time;
+            // Flames (torches, campfires, lanterns, fire) shine like Valheim's torch: its reach and
+            // brightness for a torch's light level, its shadows for the nearest few.
+            var torch = HeldLight.Template;
+            int shadowed = 0;
             for (int i = 0; i < _lights.Count; i++)
             {
                 var l = _lights[i];
@@ -576,9 +595,23 @@ namespace ValCraft
                 l.enabled = true;
                 l.transform.localPosition = e.pos;
                 l.color = e.color;
-                l.range = e.level * 1.1f;
                 float flicker = e.kind == 1 ? 0.9f + 0.1f * Mathf.PerlinNoise(time * 6f, i) : e.kind == 2 ? 0.9f + 0.1f * Mathf.Sin(time * 1.5f + i) : 1f;
-                l.intensity = 1.1f * e.level / 15f * flicker;
+                if (e.kind == 1 && torch)
+                {
+                    float level = e.level / 14f;  // a Minecraft torch is 14
+                    l.range = torch.range * Mathf.Max(0.4f, level);
+                    l.intensity = torch.intensity * level * flicker;
+                    var shadows = torch.shadows != LightShadows.None && shadowed < MaxShadowedFlames ? torch.shadows : LightShadows.None;
+                    if (shadows != LightShadows.None) shadowed++;
+                    if (l.shadows != shadows) l.shadows = shadows;
+                    l.shadowStrength = torch.shadowStrength;
+                }
+                else
+                {
+                    l.range = e.level * 1.1f;
+                    l.intensity = 1.1f * e.level / 15f * flicker;
+                    if (l.shadows != LightShadows.None) l.shadows = LightShadows.None;
+                }
             }
         }
 
