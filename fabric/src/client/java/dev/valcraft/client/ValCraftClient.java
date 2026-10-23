@@ -41,6 +41,13 @@ public final class ValCraftClient implements ClientModInitializer {
 			}));
 		});
 		ClientTickEvents.END_CLIENT_TICK.register(ValClient::clientTick);
+		// [UI] Style Valheim: the food bar's segments, Valheim's tabs in the inventory
+		ClientTickEvents.END_CLIENT_TICK.register(minecraft -> {
+			VitalsClient.tick(minecraft);
+			dev.valcraft.client.ui.FoodTracker.tick(minecraft);
+			dev.valcraft.client.ui.ValheimUi.update();
+		});
+		dev.valcraft.client.ui.InventoryTabs.install();
 		GuestLink.install();
 		// Valheim armor's 3D parts (horns, antlers, crests) on everything that wears armor.
 		net.fabricmc.fabric.api.client.rendering.v1.LivingEntityRenderLayerRegistrationCallback.EVENT.register((type, renderer, helper, context) -> {

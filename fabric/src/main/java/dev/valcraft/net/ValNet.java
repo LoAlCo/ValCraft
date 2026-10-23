@@ -188,6 +188,51 @@ public final class ValNet {
 		}
 	}
 
+	/** Guest -> server: the guest's Valheim's food and max health ([Valheim Features] FoodAndHealth). */
+	public record Vitals(boolean on, float maxHealth, int[] hash, float[] time, float[] burn, float[] health) implements CustomPacketPayload {
+		public static final Type<Vitals> TYPE = new Type<>(Identifier.fromNamespaceAndPath(ValCraft.MOD_ID, "vitals"));
+		public static final StreamCodec<RegistryFriendlyByteBuf, Vitals> CODEC = StreamCodec.of((buf, v) -> {
+			buf.writeBoolean(v.on);
+			buf.writeFloat(v.maxHealth);
+			buf.writeVarInt(v.hash.length);
+			for (int i = 0; i < v.hash.length; i++) {
+				buf.writeInt(v.hash[i]);
+				buf.writeFloat(v.time[i]);
+				buf.writeFloat(v.burn[i]);
+				buf.writeFloat(v.health[i]);
+			}
+		}, buf -> {
+			boolean on = buf.readBoolean();
+			float max = buf.readFloat();
+			int n = Math.clamp(buf.readVarInt(), 0, 3);
+			int[] hash = new int[n];
+			float[] time = new float[n], burn = new float[n], health = new float[n];
+			for (int i = 0; i < n; i++) {
+				hash[i] = buf.readInt();
+				time[i] = buf.readFloat();
+				burn[i] = buf.readFloat();
+				health[i] = buf.readFloat();
+			}
+			return new Vitals(on, max, hash, time, burn, health);
+		});
+
+		@Override
+		public Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+
+	/** Guest -> server: the guest's Valheim healed them (Valheim health). */
+	public record Heal(float valheimHealth) implements CustomPacketPayload {
+		public static final Type<Heal> TYPE = new Type<>(Identifier.fromNamespaceAndPath(ValCraft.MOD_ID, "heal"));
+		public static final StreamCodec<RegistryFriendlyByteBuf, Heal> CODEC = StreamCodec.composite(ByteBufCodecs.FLOAT, Heal::valheimHealth, Heal::new);
+
+		@Override
+		public Type<? extends CustomPacketPayload> type() {
+			return TYPE;
+		}
+	}
+
 	/** Server -> guest: an event for the guest's own Valheim (proto::McEvent: their hit on a creature, a mead, a skill, ...). */
 	public record Event(int kind, int formId, float a, float b, float c, float d, int flags, int weapon) implements CustomPacketPayload {
 		public static final Type<Event> TYPE = new Type<>(Identifier.fromNamespaceAndPath(ValCraft.MOD_ID, "event"));
@@ -216,6 +261,8 @@ public final class ValNet {
 		PayloadTypeRegistry.serverboundPlay().register(Ground.TYPE, Ground.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(ValheimFire.TYPE, ValheimFire.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(MobHit.TYPE, MobHit.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(Vitals.TYPE, Vitals.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(Heal.TYPE, Heal.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(Died.TYPE, Died.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(Event.TYPE, Event.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(GroundAgain.TYPE, GroundAgain.CODEC);
@@ -252,6 +299,17 @@ public final class ValNet {
 			ServerPlayer player = context.player();
 			float damage = Math.max(0.0F, Math.min(payload.damage(), 5000.0F));
 			context.server().execute(() -> ValCombat.valheimHitMob(player.level(), payload.entityId(), damage, payload.attackerFormId()));
+		});
+		ServerPlayNetworking.registerGlobalReceiver(Vitals.TYPE, (payload, context) -> {
+			// within Valheim's own bounds (friends only, but still)
+			float max = Math.clamp(payload.maxHealth(), 0.0F, 1000.0F);
+			dev.valcraft.combat.ValheimVitals.setGuest(context.player().getUUID(), new dev.valcraft.combat.ValheimVitals.State(payload.on(), max,
+				payload.hash(), payload.time(), payload.burn(), payload.health()));
+		});
+		ServerPlayNetworking.registerGlobalReceiver(Heal.TYPE, (payload, context) -> {
+			ServerPlayer player = context.player();
+			float amount = Math.clamp(payload.valheimHealth(), 0.0F, 500.0F);
+			context.server().execute(() -> dev.valcraft.combat.ValheimVitals.heal(player, amount));
 		});
 		ServerPlayNetworking.registerGlobalReceiver(Actors.TYPE, (payload, context) -> {
 			UUID id = context.player().getUUID();

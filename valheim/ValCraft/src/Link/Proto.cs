@@ -43,6 +43,8 @@ namespace ValCraft.Link
         public const uint ValMobSpawning = 1u << 7;  // ValCraft: [Mobs] NaturalSpawning (MobSpawner.java)
         public const uint ValMobGriefing = 1u << 8;  // ValCraft: [Explosions] CreeperGriefing (Minecraft's mobGriefing)
         public const uint ValWet = 1u << 9, ValThunder = 1u << 10;  // ValCraft: Valheim's weather for Minecraft's (WeatherSync)
+        public const uint ValUiValheim = 1u << 11;  // ValCraft: [Valheim Features] UIStyle = Valheim (UiSync)
+        public const uint ValFoodValheim = 1u << 12;  // ValCraft: [Valheim Features] FoodAndHealth = Valheim (VitalsSync)
         public const uint ValPaused = 1u << 6;  // Valheim's game is paused (single player, menu open): Minecraft pauses too
 
         // McState.flags
@@ -90,6 +92,7 @@ namespace ValCraft.Link
         public const ushort InGive = 9;        // ValCraft: give the player a Minecraft item: a = count, b = id length; InGiveData follows
         public const ushort InGiveData = 10;   // 12 bytes of the UTF-8 item id in a, b, c
         public const ushort InValheimFire = 11; // ValCraft: a Valheim fire at a, b, c (MC coords x 8): Minecraft catches fire there (FireBridge)
+        public const ushort InHeal = 13;        // ValCraft: Valheim healed the player: a = Valheim health x 100
         public const ushort InMobHit = 12;      // ValCraft: a Valheim creature hit a Minecraft mob: a = entity id, b = damage x 100, c = attacker form id
 
         // actor table
@@ -111,6 +114,7 @@ namespace ValCraft.Link
         public const uint ColRegion = 2;
         public const uint ColTris = 3;
         public const uint ColTerrain = 4;  // ValCraft block terrain: a chunk's column heights and biomes (see BlockTerrain)
+        public const uint ColValheimInfo = 5;  // ValCraft: skills, trophies, compendium, Valheim items and their icons (UiSync)
         public const uint TriStairHelper = 1u << 0;
 
         // render ring (MC produces, Valheim consumes)
@@ -163,6 +167,13 @@ namespace ValCraft.Link
         public uint mpMode;       // ValCraft multiplayer: MpOwn / MpHost / MpJoin (Multiplayer.cs)
         public uint mpSeq;        // bumps when mpMode or mpLink changes
         public fixed byte mpLink[64];  // UTF-8, NUL-terminated: the friend's world to join
+        // ValCraft [Valheim Features] FoodAndHealth (VitalsSync)
+        public float maxHealth;
+        public uint foodCount;
+        public fixed int foodHash[3];
+        public fixed float foodTime[3];
+        public fixed float foodBurn[3];
+        public fixed float foodHealth[3];
     }
 
     [StructLayout(LayoutKind.Sequential)]

@@ -159,7 +159,7 @@ namespace ValCraft
         }
 
         const uint ExplosionKeepsBlocks = 1;  // EV_EXPLOSION flags: broke no blocks (creeper, mobGriefing off)
-        const uint EvHitActor = 1, EvPlayerDied = 2, EvExplosion = 3, EvArrowStuck = 4, EvSkillUse = 5, EvValheimHit = 6, EvBuildSync = 7, EvSetTime = 9, EvConsume = 10, EvHitWeapon = 11, EvIgnite = 12;
+        const uint EvHitActor = 1, EvPlayerDied = 2, EvExplosion = 3, EvArrowStuck = 4, EvSkillUse = 5, EvValheimHit = 6, EvBuildSync = 7, EvSetTime = 9, EvConsume = 10, EvHitWeapon = 11, EvIgnite = 12, EvEat = 13, EvEatValheimItem = 14;
         const uint HitCritical = 1, HitProjectile = 2, HitSweep = 4, HitFire = 8, HitMob = 16, HitPureFire = 32;
         const uint WeaponUnarmed = 0, WeaponBlade = 1, WeaponAxe = 2, WeaponBlunt = 3, WeaponPierce = 4, WeaponArrow = 5;
 
@@ -193,6 +193,12 @@ namespace ValCraft
                     break;
                 case EvConsume:
                     Consume(player, (int)ev.formId);
+                    break;
+                case EvEat:
+                    VitalsSync.Eat(player, (int)ev.formId);
+                    break;
+                case EvEatValheimItem:
+                    VitalsSync.EatValheimItem(player, Mathf.RoundToInt(ev.a), Mathf.RoundToInt(ev.b));
                     break;
                 case EvIgnite:
                     if (_byId.TryGetValue(ev.formId, out var burning) && burning && !burning.IsDead()) Ignite(burning, ev.a);

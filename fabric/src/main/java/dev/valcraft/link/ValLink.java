@@ -195,6 +195,11 @@ public final class ValLink {
 		/** Multiplayer: Proto.MP_OWN / MP_HOST / MP_JOIN, and the friend's world for MP_JOIN. */
 		public int mpMode, mpSeq;
 		public String mpLink = "";
+		/** [Valheim Features] FoodAndHealth: Valheim's max health and its foods (VitalsSync.cs). */
+		public float maxHealth;
+		public int foodCount;
+		public final int[] foodHash = new int[3];
+		public final float[] foodTime = new float[3], foodBurn = new float[3], foodHealth = new float[3];
 
 		public boolean inGame() {
 			return (this.flags & VAL_IN_GAME) != 0;
@@ -288,6 +293,14 @@ public final class ValLink {
 				out.mpLink = readString(s, b + SS_MP_LINK, MP_LINK_BYTES);
 			}
 			out.mpSeq = mpSeq;
+			out.maxHealth = s.get(JAVA_FLOAT, b + SS_MAX_HEALTH);
+			out.foodCount = Math.clamp(s.get(JAVA_INT, b + SS_FOOD_COUNT), 0, 3);
+			for (int i = 0; i < 3; i++) {
+				out.foodHash[i] = s.get(JAVA_INT, b + SS_FOOD_HASH + 4L * i);
+				out.foodTime[i] = s.get(JAVA_FLOAT, b + SS_FOOD_TIME + 4L * i);
+				out.foodBurn[i] = s.get(JAVA_FLOAT, b + SS_FOOD_BURN + 4L * i);
+				out.foodHealth[i] = s.get(JAVA_FLOAT, b + SS_FOOD_HEALTH + 4L * i);
+			}
 			VarHandle.loadLoadFence();
 			int seq2 = (int) INT.getAcquire(s, b + SS_SEQ);
 			if (seq1 == seq2) {

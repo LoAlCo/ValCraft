@@ -64,6 +64,31 @@ Start Valheim from Gale after an update: the first start installs the new Minecr
 - [ ] Every armor set has boots (`/give @s valcraft:iron_boots`); leggings from Valheim come with their boots
 - [ ] The repainted sets match Valheim's (Leather, Troll, Padded, Eitr-weave, Caller, Protector, Vanguard, Embla, Carapace, Fenris, Bear)
 
+### Valheim food and health (`[Valheim Features] FoodAndHealth`, ValCraft settings, Valheim Features tab)
+- [ ] **Settings tabs:** ValCraft settings has two tabs, General and Valheim Features; Valheim Features holds UI Style and Food And Health
+- [ ] With no food eaten: max health is Valheim's 25 (the bar says x/25; 5 Minecraft health)
+- [ ] Eat bread: Valheim's message "+23 health ..." and the bar's max goes up to 48; health fills up over time (healing every 10 s), not at once
+- [ ] Eat cooked porkchop and an apple: three food segments, each with its food's icon and minutes left; a fourth food is refused ("You can't eat any more") until one is past half its time
+- [ ] The same food again right away is refused ("You can't eat more of that yet")
+- [ ] As a food runs low, max health drops (the end of a food tapers off), and the segment empties
+- [ ] Minecraft's hunger never drains and doesn't heal you; you can always sprint
+- [ ] A Valheim healing mead (drunk in Minecraft) heals the Minecraft player
+- [ ] Valheim Items tab: right-click a Valheim food or mead there: the Viking eats or drinks it (it leaves the Valheim inventory)
+- [ ] Dying clears the foods (back to 25)
+- [ ] Food And Health = Minecraft: hearts/hunger back to normal, max health 20 again
+
+### Valheim-style UI (`[Valheim Features] UIStyle`, ValCraft settings, Valheim Features tab)
+- [ ] **Health bar:** a red bar where the hearts were, with marks every heart and the number in the middle; it doesn't get longer with more health (marks get closer); damage leaves a white trail that drains away; poison turns it green, wither grey, freezing light blue; absorption shows gold at the end
+- [ ] **Food bar:** where the hunger was; eat two or three different foods: a segment per food, each with that food's little icon, the oldest on the left and used up first; a fourth food folds the oldest two together; Hunger effect turns it green
+- [ ] Armor icons and air bubbles still show above the bars; riding a horse shows the horse's hearts instead of the food bar
+- [ ] **Inventory tabs (E):** five tabs along the top like the creative inventory's: Inventory, Skills, Trophies, Compendium, Valheim Items; they follow the panel when the recipe book opens
+- [ ] **Skills:** every Valheim skill with its icon (Valheim's, as pixel art), level in green, bonus in blue, a progress bar; hover for the description; wheel and the scroller scroll
+- [ ] **Trophies:** your trophies in slots with their icons; hover for the lore
+- [ ] **Compendium:** Active effects first (their icons), then everything you've read; click one to read it, `<` to go back
+- [ ] **Valheim Items:** what stays in the Valheim inventory, where it sits there, with counts, equipped ones in blue, weight top right
+- [ ] E or Esc closes a tab like the inventory; the Inventory tab goes back
+- [ ] UI Style Minecraft: hearts, hunger and no tabs again (changes at once)
+
 ### Multiplayer (experimental, needs friends)
 - [ ] Friends with 0.7.0+ joining your Valheim world end up in your Minecraft world within ~10 s
 - [ ] You see each other's Minecraft avatars, not Vikings; blocks, loot, hits and meads work for guests
@@ -78,4 +103,5 @@ Start Valheim from Gale after an update: the first start installs the new Minecr
 - **Mob pathing** over Valheim's ground: better, still to improve.
 - **Weak weapon designs:** fists, Berserkir axes, Early Axes, Skoll and Hati.
 - **Minecraft's portals** (Nether, End) don't work.
+- **Valheim stats in Minecraft's UI, UI rework:** planned, see `docs/PLAN-UI.md`.
 - **Multiplayer by design:** the shared world is the host's (it closes when they leave); everyone should be in the host's terrain mode (F8).

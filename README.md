@@ -1,5 +1,9 @@
 # ValCraft
 
+> **Project paused:** ValCraft is on a short break and will pick up again in a few weeks, in early
+> November. Some features are planned but not fully implemented yet. The latest release still works
+> as described below.
+
 A passthrough mod: Minecraft and Valheim run at the same time and talk through shared memory.
 You play Valheim's world as a Minecraft player, with Minecraft's movement, inventory, HUD, hand,
 blocks, combat and chat inside Valheim's terrain, lighting, weather, creatures and dungeons.
@@ -108,7 +112,7 @@ Holding a Minecraft hoe or the **Build Hammer** (Valheim's build mode):
 
 ### Settings
 
-In game: **ValCraft settings** in Valheim's pause menu (Esc) changes them on the spot (the Minecraft and Debug ones under **Advanced settings**), and its **Minecraft options** button opens Minecraft's own options. They're also in `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor, or the optional ConfigurationManager, see Controls):
+In game: **ValCraft settings** in Valheim's pause menu (Esc) changes them on the spot: the **General** tab, and the **Valheim Features** tab for the Valheim gameplay brought into Minecraft (the Minecraft and Debug ones under **Advanced settings**), and its **Minecraft options** button opens Minecraft's own options. They're also in `BepInEx/config/loalco.valcraft.cfg` (or your mod manager's config editor, or the optional ConfigurationManager, see Controls):
 
 | Setting | Does |
 |---|---|
@@ -123,6 +127,8 @@ In game: **ValCraft settings** in Valheim's pause menu (Esc) changes them on the
 | `[Explosions] Craters` | Multiplier for the size of the craters explosions blow in Valheim's ground (default 1; 0 = no craters) |
 | `[Explosions] CreeperGriefing` | Creeper explosions break the environment, in Valheim and in block terrain (Minecraft's mobGriefing rule; default off) |
 | `[Multiplayer] SharedWorld` | Everyone with ValCraft in the Valheim world plays in one Minecraft world (default on); off: your own |
+| `[Valheim Features] FoodAndHealth` | `Valheim` (default): food and health as in Valheim. Eating a Minecraft food is eating its Valheim counterpart (bread is Valheim's bread, cooked porkchop is cooked boar meat, ...): up to three foods, each raising your max health for a while and healing you every 10 s, not the same food again until half its time is gone; with no food you have Valheim's base 25 health. Minecraft's hunger stays full and doesn't drain or heal. Foods and meads left in the Valheim inventory can be eaten from the inventory's Valheim Items tab (right-click). `Minecraft`: Minecraft's hearts and hunger |
+| `[Valheim Features] UIStyle` | `Valheim` (default): a health bar and a food bar (a segment per food you ate) in place of the hearts and hunger, and tabs in the inventory for Valheim's skills, trophies, compendium and Valheim-only items; `Minecraft`: Minecraft's own |
 | `[Camera] FOV` | Field of view, the same setting as Minecraft's FOV option: changing either changes both |
 | `[Camera] ViewmodelFOV`, `LockViewmodelFOV` | The field of view your hands and held item are drawn at; locked (default) it follows FOV |
 | `[Controls] ValheimControls`, `BlockTerrain`, `Use`, `MinecraftOptions`, `Map`, `BuildRotate` | ValCraft's own keys (F7, F8, G, O, M, Alt); see Controls |

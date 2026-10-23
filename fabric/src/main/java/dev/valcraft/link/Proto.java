@@ -48,6 +48,7 @@ public final class Proto {
 	public static final int IN_VALHEIM_FIRE = 11;
 	/** ValCraft: a Valheim creature hit a Minecraft mob: a = entity id, b = Valheim damage x 100, c = the creature's form id. */
 	public static final int IN_MOB_HIT = 12;
+	public static final int IN_HEAL = 13; // ValCraft: Valheim healed the player: a = Valheim health x 100
 	public static final int HURT_MELEE = 0;
 	public static final int HURT_PROJECTILE = 1;
 	public static final int HURT_MAGIC = 2;
@@ -91,6 +92,10 @@ public final class Proto {
 	public static final int EV_HIT_WEAPON = 11;
 	/** ValCraft: a Valheim actor's stand-in caught fire: formId, a = seconds it burns. Valheim sets the creature burning. */
 	public static final int EV_IGNITE = 12;
+	/** ValCraft: ate in Minecraft: formId = the Valheim food (prefab name's hashCode). */
+	public static final int EV_EAT = 13;
+	/** ValCraft: eat or drink the Valheim inventory's item at grid a, b (the Valheim Items tab). */
+	public static final int EV_EAT_VALHEIM_ITEM = 14;
 	/** EV_HIT_ACTOR flag: the hit is fire alone (lava, fire, fireballs, magma): Valheim deals it as fire damage only. */
 	public static final int HIT_PURE_FIRE = 1 << 5;
 	public static final int TOOL_NONE = 0, TOOL_SWORD = 1, TOOL_AXE = 2, TOOL_PICKAXE = 3, TOOL_SHOVEL = 4, TOOL_HOE = 5;
@@ -192,6 +197,12 @@ public final class Proto {
 	public static final long SS_MP_SEQ = 0x4C;
 	public static final long SS_MP_LINK = 0x50;
 	public static final int MP_LINK_BYTES = 64;
+	public static final long SS_MAX_HEALTH = 0x90;
+	public static final long SS_FOOD_COUNT = 0x94;
+	public static final long SS_FOOD_HASH = 0x98;
+	public static final long SS_FOOD_TIME = 0xA4;
+	public static final long SS_FOOD_BURN = 0xB0;
+	public static final long SS_FOOD_HEALTH = 0xBC;
 	/** ValState.mpMode: our own world; our own, opened to friends; a friend's (at mpLink). */
 	public static final int MP_OWN = 0, MP_HOST = 1, MP_JOIN = 2;
 
@@ -209,6 +220,10 @@ public final class Proto {
 	public static final int VAL_MOB_GRIEFING = 1 << 8;
 	/** ValCraft: Valheim's weather where the player is: rain or snow (Minecraft rains), a thunderstorm (it thunders). */
 	public static final int VAL_WET = 1 << 9, VAL_THUNDER = 1 << 10;
+	/** ValCraft: [UI] Style = Valheim: a health bar and a food bar, Valheim tabs in the inventory (ValheimHud). */
+	public static final int VAL_UI_VALHEIM = 1 << 11;
+	/** ValCraft: [Valheim Features] FoodAndHealth = Valheim: Valheim's foods set max health and heal (ValheimVitals). */
+	public static final int VAL_FOOD_VALHEIM = 1 << 12;
 
 	// McState (relative to OFF_MC_STATE)
 	public static final long MS_SEQ = 0x00;
@@ -300,6 +315,7 @@ public final class Proto {
 	public static final int COL_REGION = 2;
 	public static final int COL_TRIS = 3;
 	public static final int COL_TERRAIN = 4; // ValCraft: a chunk's column heights and biomes for block terrain
+	public static final int COL_VALHEIM_INFO = 5; // ValCraft: skills, trophies, compendium, Valheim items, icons (ValheimInfo)
 	public static final int COL_TRI_BYTES = 40;
 	public static final int TRI_STAIR_HELPER = 1;
 	public static final int COL_REGION_HEADER_BYTES = 32;

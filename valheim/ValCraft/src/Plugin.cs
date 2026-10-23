@@ -47,6 +47,8 @@ namespace ValCraft
             Multiplayer.Init(Config);
             Launcher.Init(Config);
             BlockTerrain.Init(Config);
+            UiSync.Init(Config);
+            VitalsSync.Init(Config);
             Loot.Load();
             Collision.Start();
             new Harmony(Guid).PatchAll();
@@ -94,6 +96,7 @@ namespace ValCraft
                 HeldLight.Frame();
                 BoatSeat.Frame();
                 MobProxies.Frame();
+                UiSync.Frame();
                 t = Prof.Start(); Overlay.Upload(); Prof.Stop("overlay", t);
                 Report();
             }

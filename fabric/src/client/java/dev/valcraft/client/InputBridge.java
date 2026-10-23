@@ -87,6 +87,7 @@ public final class InputBridge {
 			}
 			case Proto.IN_VALHEIM_FIRE -> valheimFire(minecraft, a / 8.0F, b / 8.0F, c / 8.0F);
 			case Proto.IN_MOB_HIT -> mobHit(minecraft, a, b / 100.0F, c);
+			case Proto.IN_HEAL -> VitalsClient.heal(minecraft, a / 100.0F);
 			case Proto.IN_OPEN_MENU -> {
 				if (minecraft.gui.screen() == null && minecraft.player != null) {
 					releaseAll();

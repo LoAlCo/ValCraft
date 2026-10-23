@@ -320,7 +320,7 @@ namespace ValCraft.Link
         {
             // Same checks as the static_asserts in valcraft_protocol.h.
             Expect(sizeof(Header) == 0x20, "Header");
-            Expect(sizeof(ValState) == 0x90, "ValState");
+            Expect(sizeof(ValState) == 0xC8, "ValState");
             Expect(sizeof(McState) == 0x100, "McState");
             Expect(sizeof(McEvent) == 32, "McEvent");
             Expect(sizeof(ColRegion) == 32, "ColRegion");

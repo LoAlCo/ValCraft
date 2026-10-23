@@ -30,6 +30,7 @@ public final class ValCraft implements ModInitializer {
 		net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(dev.valcraft.world.TimeSync::tick);
 		net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(dev.valcraft.world.TerrainGen::tick);
 		net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(dev.valcraft.world.MobSpawner::tick);
+		net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(dev.valcraft.combat.ValheimVitals::tick);
 		dev.valcraft.world.PlayerSync.init();
 		dev.valcraft.world.BuildSync.init();
 		dev.valcraft.world.ItemCarry.init();

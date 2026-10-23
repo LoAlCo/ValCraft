@@ -209,6 +209,7 @@ public final class ValCollision {
 				case COL_REGION -> readRegion(s, payload, false);
 				case COL_TRIS -> readTris(s, payload, false);
 				case COL_TERRAIN -> readTerrain(s, payload);
+				case dev.valcraft.link.Proto.COL_VALHEIM_INFO -> dev.valcraft.link.ValheimInfo.receive(s.asSlice(payload, payloadBytes).toArray(JAVA_BYTE));
 				default -> ValCraft.LOG.warn("ValCraft: unknown collision message {}", type);
 			}
 			tail += align8(8 + payloadBytes);

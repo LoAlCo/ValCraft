@@ -61,7 +61,8 @@ namespace valcraft::proto
 		kValLoading = 1u << 2,   // loading screen / cell transition in progress
 		// ValCraft: bit 3 block terrain, bits 4-5 mob pathfinding (see Proto.cs / Proto.java)
 		kValPaused = 1u << 6,    // Valheim's game is paused (single player, menu open): pause MC too
-		// ValCraft: bit 7 mob natural spawning, bit 8 mob griefing, bit 9 wet weather (rain, snow), bit 10 thunderstorm
+		// ValCraft: bit 7 mob natural spawning, bit 8 mob griefing, bit 9 wet weather (rain, snow), bit 10 thunderstorm,
+		// bit 11 [UI] Style Valheim, bit 12 Valheim's food and health
 	};
 
 	// Valheim's water (lakes, rivers, the sea) around the player, for Minecraft to treat as its own
@@ -97,8 +98,15 @@ namespace valcraft::proto
 		std::uint32_t mpMode;
 		std::uint32_t mpSeq;      // bumps when mpMode or mpLink changes
 		char          mpLink[64]; // UTF-8, NUL-terminated
+		// ValCraft [Valheim Features] FoodAndHealth: Valheim's food and health for Minecraft's (VitalsSync)
+		float         maxHealth;     // Valheim's max health (base + food), Valheim points
+		std::uint32_t foodCount;     // foods eaten, 0..3
+		std::int32_t  foodHash[3];   // each food's prefab name, as Java's String.hashCode()
+		float         foodTime[3];   // seconds left
+		float         foodBurn[3];   // seconds it lasts in all
+		float         foodHealth[3]; // the health it gives now (it tapers off near the end)
 	};
-	static_assert(sizeof(ValState) == 0x90);
+	static_assert(sizeof(ValState) == 0xC8);
 
 	// ---- MC -> Valheim state @0x200 (seqlock) ------------------------------------------------
 	enum McFlags : std::uint32_t
@@ -211,6 +219,7 @@ namespace valcraft::proto
 		kInGiveData = 10,    // the next 12 bytes of the item id in a, b, c (little-endian)
 		kInValheimFire = 11, // ValCraft: a Valheim fire burns at a/b/c (MC coords x 8): Minecraft's flammable blocks and mobs there catch fire
 		kInMobHit = 12,      // ValCraft: a Valheim creature hit a Minecraft mob: a = its entity id, b = Valheim damage x 100, c = the creature's form id
+		kInHeal = 13,        // ValCraft: Valheim healed the player (food regen, meads): a = Valheim health x 100
 	};
 
 	enum HurtKind : std::uint16_t
@@ -278,6 +287,8 @@ namespace valcraft::proto
 		                    // flags = flight pitch (float bits), weapon = arrow texture (0 plain, 1 tipped, 2 spectral)
 		kEvSkillUse = 5,    // the player used a Valheim skill in Minecraft: formId = Valheim skill (ActorValue: 9 Block,
 		                    // 10 Smithing, 11 Heavy Armor, 12 Light Armor), a = uses (as Valheim's AdvanceSkill counts them)
+		kEvEat = 13,        // ValCraft: the player ate in Minecraft: formId = the Valheim food (prefab name's String.hashCode())
+		kEvEatValheimItem = 14,  // ValCraft: eat or drink the Valheim inventory's item at grid a, b (the Valheim Items tab)
 		kEvValheimHit = 6,  // a swing at Valheim's world: formId = tool (ToolKind | tier << 4), a/b/c = hit point (MC coords), d = attack strength 0..1
 		// ValCraft: 7 build sync, 9 set time (a = hour 0-24, b = extra days), 10 consume (formId = prefab name hash), 11 hit weapon (before a hit: formId = Valheim weapon prefab hash, a = its MC damage),
 		// 12 ignite (formId, a = seconds it burns: a Valheim actor's stand-in caught fire in Minecraft); see Proto.java
@@ -560,6 +571,8 @@ namespace valcraft::proto
 		kColClear = 1,   // payload: u32 epoch
 		kColRegion = 2,  // payload: ColRegion + ColBlock[count]
 		kColTris = 3,    // payload: ColRegion (count = triangles) + ColTri[count]; sent before kColRegion
+		kColTerrain = 4,     // ValCraft block terrain: a chunk's column heights and biomes
+		kColValheimInfo = 5, // ValCraft: skills, trophies, compendium, Valheim items and their icons (UiSync); JSON + 16x16 RGBA icons
 	};
 
 	// Exact Valheim collision triangle (MC space) for the player's smooth collider.

@@ -175,12 +175,31 @@ namespace ValCraft
             trt.sizeDelta = new Vector2(0, 56);
             trt.anchoredPosition = new Vector2(0, -14);
 
+            // the tabs: ValCraft's own settings, and the Valheim features it brings to Minecraft
+            var tabs = Rect("Tabs", window);
+            tabs.anchorMin = new Vector2(0, 1);
+            tabs.anchorMax = new Vector2(1, 1);
+            tabs.pivot = new Vector2(0.5f, 1);
+            tabs.sizeDelta = new Vector2(0, 44);
+            tabs.anchoredPosition = new Vector2(0, -70);
+            var tlg = tabs.gameObject.AddComponent<HorizontalLayoutGroup>();
+            tlg.childAlignment = TextAnchor.MiddleCenter;
+            tlg.spacing = 12;
+            tlg.childControlWidth = tlg.childControlHeight = true;
+            tlg.childForceExpandWidth = tlg.childForceExpandHeight = false;
+            _tabButtons = new Button[TabNames.Length];
+            for (int i = 0; i < TabNames.Length; i++)
+            {
+                int tab = i;
+                _tabButtons[i] = SmallButton(tabs, TabNames[i], 300, () => ShowTab(tab));
+            }
+
             // the list, scrolling
             var view = Rect("Viewport", window);
             view.anchorMin = new Vector2(0, 0);
             view.anchorMax = new Vector2(1, 1);
             view.offsetMin = new Vector2(30, 80);
-            view.offsetMax = new Vector2(-30 - ScrollBarWidth - 8, -76);
+            view.offsetMax = new Vector2(-30 - ScrollBarWidth - 8, -ListTop);
             view.gameObject.AddComponent<RectMask2D>();
             view.gameObject.AddComponent<Image>().color = new Color(0, 0, 0, 0.25f);
             var content = Rect("Content", view);
@@ -204,6 +223,7 @@ namespace ValCraft
             scroll.movementType = ScrollRect.MovementType.Clamped;
             scroll.verticalScrollbar = ScrollBar(window);
             scroll.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
+            _scroll = scroll;
             _content = content;
 
             // the bottom row: Minecraft's own options, and back
@@ -225,7 +245,42 @@ namespace ValCraft
             Populate();
         }
 
-        const float ScrollBarWidth = 16;
+        const float ScrollBarWidth = 16, ListTop = 124;
+
+        // ---- tabs -------------------------------------------------------------------------------
+        // The second tab gathers the Valheim features ValCraft brings into Minecraft (sections listed here).
+        static readonly string[] TabNames = { "General", "Valheim Features" };
+        static readonly string[] FeatureSections = { "Valheim Features" };
+        static Button[] _tabButtons;
+        static Transform[] _tabRoots;
+        static ScrollRect _scroll;
+        static int _tab;
+
+        static int TabOf(string section) => Array.IndexOf(FeatureSections, section) >= 0 ? 1 : 0;
+
+        static void ShowTab(int tab)
+        {
+            _tab = tab;
+            for (int i = 0; i < _tabRoots.Length; i++) _tabRoots[i].gameObject.SetActive(i == tab);
+            for (int i = 0; i < _tabButtons.Length; i++)
+            {
+                var c = _tabButtons[i].colors;
+                c.normalColor = c.selectedColor = i == tab ? new Color(0.72f, 0.48f, 0.2f, 0.95f) : new Color(0.32f, 0.24f, 0.16f, 0.75f);
+                _tabButtons[i].colors = c;
+            }
+            if (_scroll) _scroll.verticalNormalizedPosition = 1f;
+        }
+
+        static Transform Column(string name, Transform parent)
+        {
+            var root = Rect(name, parent);
+            var v = root.gameObject.AddComponent<VerticalLayoutGroup>();
+            v.spacing = 6;
+            v.childControlWidth = v.childControlHeight = true;
+            v.childForceExpandWidth = true;
+            v.childForceExpandHeight = false;
+            return root;
+        }
 
         // The bar right of the list: a dark track, a gold handle to drag.
         static Scrollbar ScrollBar(Transform window)
@@ -235,7 +290,7 @@ namespace ValCraft
             track.anchorMax = new Vector2(1, 1);
             track.pivot = new Vector2(1, 0.5f);
             track.offsetMin = new Vector2(-30 - ScrollBarWidth, 80);
-            track.offsetMax = new Vector2(-30, -76);
+            track.offsetMax = new Vector2(-30, -ListTop);
             track.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.45f);
             var area = Rect("Sliding Area", track);
             area.anchorMin = Vector2.zero;
@@ -283,22 +338,20 @@ namespace ValCraft
                 if (!bySection.TryGetValue(kv.Key.Section, out var list)) bySection[kv.Key.Section] = list = new List<ConfigEntryBase>();
                 list.Add(e);
             }
+            _tabRoots = new Transform[TabNames.Length];
+            for (int i = 0; i < TabNames.Length; i++) _tabRoots[i] = Column("Tab " + TabNames[i], _content);
+            var general = _tabRoots[0];
             foreach (var section in bySection)
-                if (Array.IndexOf(AdvancedSections, section.Key) < 0) Section(_content, section.Key, section.Value);
+                if (Array.IndexOf(AdvancedSections, section.Key) < 0) Section(_tabRoots[TabOf(section.Key)], section.Key, section.Value);
 
             // the advanced ones, folded away under a button
-            var row = Rect("AdvancedRow", _content);
+            var row = Rect("AdvancedRow", general);
             var h = row.gameObject.AddComponent<HorizontalLayoutGroup>();
             h.childAlignment = TextAnchor.MiddleCenter;
             h.childControlWidth = h.childControlHeight = true;
             h.childForceExpandWidth = h.childForceExpandHeight = false;
             h.padding = new RectOffset(0, 0, 14, 6);
-            var advanced = Rect("Advanced", _content);
-            var v = advanced.gameObject.AddComponent<VerticalLayoutGroup>();
-            v.spacing = 6;
-            v.childControlWidth = v.childControlHeight = true;
-            v.childForceExpandWidth = true;
-            v.childForceExpandHeight = false;
+            var advanced = Column("Advanced", general);
             foreach (var name in AdvancedSections)
                 if (bySection.TryGetValue(name, out var list)) Section(advanced, name, list);
             Button button = null;
@@ -309,6 +362,7 @@ namespace ValCraft
             };
             button = SmallButton(row, "", 340, () => { _showAdvanced = !_showAdvanced; show(); });
             _refresh.Add(show);
+            ShowTab(_tab);
         }
 
         static void Section(Transform parent, string name, List<ConfigEntryBase> entries)
